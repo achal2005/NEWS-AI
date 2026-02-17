@@ -37,6 +37,7 @@ export default function ArticlePage() {
     const [summaryMode, setSummaryMode] = useState<'kid' | 'pro'>('pro')
     const [loading, setLoading] = useState(true)
     const [loadingSummary, setLoadingSummary] = useState(false)
+    const [summaryError, setSummaryError] = useState<string | null>(null)
     const [summaryKey, setSummaryKey] = useState(0)
 
     // Reading time tracking
@@ -100,16 +101,28 @@ export default function ArticlePage() {
     const fetchSummary = async () => {
         if (!article) return
         setLoadingSummary(true)
+        setSummaryError(null)
 
         try {
             const res = await fetch(
-                `${apiUrl}/api/news/${article.id}/summary?mode=${summaryMode}`
+                `${apiUrl}/api/news/${article.id}/summary?mode=${summaryMode}`,
+                { cache: 'no-store' }
             )
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}))
+                throw new Error(errData.detail || `Server error ${res.status}`)
+            }
             const data = await res.json()
-            setSummary(data)
-            setSummaryKey(prev => prev + 1)
-        } catch (error) {
+            if (data && data.summary) {
+                setSummary(data)
+                setSummaryKey(prev => prev + 1)
+            } else {
+                setSummaryError('Summary not available for this article.')
+                setSummary(null)
+            }
+        } catch (error: any) {
             console.error('Failed to fetch summary:', error)
+            setSummaryError(error.message || 'Failed to load summary')
             setSummary(null)
         } finally {
             setLoadingSummary(false)
@@ -322,7 +335,22 @@ export default function ArticlePage() {
                                     delay={200}
                                 />
                             </div>
-                        ) : null}
+                        ) : summaryError ? (
+                            <div className="text-sm" style={{ color: 'var(--ink-muted)' }}>
+                                <p className="mb-3">{summaryError}</p>
+                                <button
+                                    onClick={fetchSummary}
+                                    className="text-xs font-medium px-3 py-1.5 rounded-sm transition-colors"
+                                    style={{ backgroundColor: 'var(--paper-sunken)', color: 'var(--ink)' }}
+                                >
+                                    Retry
+                                </button>
+                            </div>
+                        ) : (
+                            <p className="text-sm" style={{ color: 'var(--ink-muted)' }}>
+                                Loading summary...
+                            </p>
+                        )}
                     </motion.section>
 
                     {/* Jargon Section */}

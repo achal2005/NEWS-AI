@@ -3,8 +3,8 @@ import { Playfair_Display, Inter } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/lib/auth'
 import { ThemeProvider } from '@/components/ui/ThemeProvider'
-import { Sidebar } from '@/components/ui/Sidebar'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
+import { LayoutShell } from '@/components/ui/LayoutShell'
 
 const playfair = Playfair_Display({
     subsets: ['latin'],
@@ -41,17 +41,15 @@ export default function RootLayout({
             <body className="min-h-screen antialiased font-sans">
                 <AuthProvider>
                     <ThemeProvider>
-                        <div className="flex min-h-screen">
-                            <Sidebar />
-                            <main className="flex-1 min-h-screen ml-0 md:ml-sidebar transition-[margin] duration-300">
-                                <ErrorBoundary>
-                                    {children}
-                                </ErrorBoundary>
-                            </main>
-                        </div>
+                        <LayoutShell>
+                            <ErrorBoundary>
+                                {children}
+                            </ErrorBoundary>
+                        </LayoutShell>
                     </ThemeProvider>
                 </AuthProvider>
             </body>
         </html>
     )
 }
+

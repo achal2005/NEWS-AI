@@ -2,18 +2,20 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Newspaper, LogIn, Sparkles, Shield, BookOpen } from 'lucide-react'
+import { Newspaper, LogIn, Sparkles, BookOpen } from 'lucide-react'
 
 export default function LoginPage() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
     const handleGoogleLogin = async () => {
         setLoading(true)
         setError(null)
 
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/google`)
+            const res = await fetch(`${apiUrl}/api/auth/google`)
 
             if (!res.ok) {
                 const errorData = await res.json()
@@ -38,7 +40,6 @@ export default function LoginPage() {
 
     const features = [
         { icon: Sparkles, text: 'AI-powered summaries in two reading modes' },
-        { icon: Shield, text: 'Fact-checked articles with veracity scores' },
         { icon: BookOpen, text: 'Weekly quizzes and a competitive leaderboard' },
     ]
 

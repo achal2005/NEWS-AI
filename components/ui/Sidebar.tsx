@@ -12,7 +12,7 @@ import { useAuth } from '@/lib/auth'
 import { useTheme } from '@/components/ui/ThemeProvider'
 
 const NAV_ITEMS = [
-    { href: '/', icon: Home, label: 'Home' },
+    { href: '/dashboard', icon: Home, label: 'Home' },
     { href: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
     { href: '/quiz', icon: BookOpen, label: 'Quiz' },
     { href: '/profile', icon: Settings, label: 'Settings' },

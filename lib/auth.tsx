@@ -33,6 +33,16 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
+/** Set a cookie (used by edge middleware to check auth). */
+function setTokenCookie(token: string) {
+    document.cookie = `token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
+}
+
+/** Clear the token cookie. */
+function clearTokenCookie() {
+    document.cookie = 'token=; path=/; max-age=0; SameSite=Lax'
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
     const [token, setToken] = useState<string | null>(null)
@@ -44,6 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const storedToken = localStorage.getItem('token')
         if (storedToken) {
             setToken(storedToken)
+            // Ensure cookie is also set (in case it was cleared)
+            setTokenCookie(storedToken)
             fetchUser(storedToken)
         } else {
             setIsLoading(false)
@@ -64,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             } else {
                 // Token invalid, clear it
                 localStorage.removeItem('token')
+                clearTokenCookie()
                 setToken(null)
             }
         } catch (error) {
@@ -90,15 +103,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const authToken = data.access_token
 
         localStorage.setItem('token', authToken)
+        setTokenCookie(authToken)
         setToken(authToken)
 
         await fetchUser(authToken)
+
+        // Redirect to onboarding if profile is not complete
+        if (!data.profile_complete) {
+            router.push('/onboarding')
+        }
 
         return { profileComplete: data.profile_complete }
     }
 
     const logout = () => {
         localStorage.removeItem('token')
+        clearTokenCookie()
         setUser(null)
         setToken(null)
         router.push('/')
@@ -162,3 +182,4 @@ export function withAuth<P extends object>(
         return <Component {...props} />
     }
 }
+

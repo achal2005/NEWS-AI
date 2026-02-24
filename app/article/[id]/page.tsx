@@ -4,11 +4,10 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Sparkles, BookOpen, Share2, ExternalLink } from 'lucide-react'
-import TruthMeter, { TruthMeterBadge } from '@/components/TruthMeter'
+import { ArrowLeft, Sparkles, BookOpen, Share2, ExternalLink, Clock } from 'lucide-react'
 import { ModeSwitch } from '@/components/SummaryModeToggle'
 import { TypewriterText } from '@/components/ui/TypewriterText'
-// import { AskEditor } from '@/components/ui/AskEditor'
+import { useAuth } from '@/lib/auth'
 
 interface ArticleDetail {
     id: string
@@ -32,6 +31,7 @@ interface Summary {
 
 export default function ArticlePage() {
     const params = useParams()
+    const { token, isAuthenticated } = useAuth()
     const [article, setArticle] = useState<ArticleDetail | null>(null)
     const [summary, setSummary] = useState<Summary | null>(null)
     const [summaryMode, setSummaryMode] = useState<'kid' | 'pro'>('pro')
@@ -40,44 +40,56 @@ export default function ArticlePage() {
     const [summaryError, setSummaryError] = useState<string | null>(null)
     const [summaryKey, setSummaryKey] = useState(0)
 
-    // Reading time tracking
+    const [hasRequestedSummary, setHasRequestedSummary] = useState(false)
+
+    // Reading time tracking — updates every second for live display
     const startTimeRef = useRef<number>(Date.now())
+    const articleRef = useRef<ArticleDetail | null>(null)
+    const tokenRef = useRef<string | null>(null)
     const [readingSeconds, setReadingSeconds] = useState(0)
+
+    // Keep refs in sync for cleanup
+    useEffect(() => { articleRef.current = article }, [article])
+    useEffect(() => { tokenRef.current = token }, [token])
 
     useEffect(() => {
         fetchArticle()
         startTimeRef.current = Date.now()
 
+        // Update reading time counter every second
         const interval = setInterval(() => {
             setReadingSeconds(Math.floor((Date.now() - startTimeRef.current) / 1000))
-        }, 10000)
+        }, 1000)
 
         return () => {
             clearInterval(interval)
             const finalSeconds = Math.floor((Date.now() - startTimeRef.current) / 1000)
-            if (finalSeconds >= 10 && article?.id) {
+            if (finalSeconds >= 10 && articleRef.current?.id) {
                 recordReadingTime(finalSeconds)
             }
         }
     }, [params.id])
 
+    // Only re-fetch summary on mode change IF user already requested one
     useEffect(() => {
-        if (article) {
+        if (article && hasRequestedSummary) {
             fetchSummary()
         }
-    }, [article, summaryMode])
+    }, [summaryMode])
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
     const recordReadingTime = async (seconds: number) => {
+        const authToken = tokenRef.current || localStorage.getItem('token')
+        if (!authToken) return // Skip if not authenticated
         try {
             await fetch(`${apiUrl}/api/user/reading-time`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${authToken}`
                 },
-                body: JSON.stringify({ article_id: article?.id, seconds })
+                body: JSON.stringify({ article_id: articleRef.current?.id, seconds })
             })
         } catch (error) {
             console.log('Reading time tracking failed')
@@ -98,6 +110,11 @@ export default function ArticlePage() {
         }
     }
 
+    const requestSummary = () => {
+        setHasRequestedSummary(true)
+        fetchSummary()
+    }
+
     const fetchSummary = async () => {
         if (!article) return
         setLoadingSummary(true)
@@ -108,6 +125,12 @@ export default function ArticlePage() {
                 `${apiUrl}/api/news/${article.id}/summary?mode=${summaryMode}`,
                 { cache: 'no-store' }
             )
+            if (res.status === 429) {
+                throw new Error('AI quota exceeded. Summary will be available after reset. Try again later.')
+            }
+            if (res.status === 503) {
+                throw new Error('AI service temporarily unavailable. Please try again in a few minutes.')
+            }
             if (!res.ok) {
                 const errData = await res.json().catch(() => ({}))
                 throw new Error(errData.detail || `Server error ${res.status}`)
@@ -151,7 +174,7 @@ export default function ArticlePage() {
             <div className="min-h-screen p-gutter flex items-center justify-center">
                 <div className="text-center">
                     <h1 className="font-serif text-2xl mb-4" style={{ color: 'var(--ink)' }}>Article not found</h1>
-                    <Link href="/" className="text-sm font-medium" style={{ color: 'var(--accent)' }}>
+                    <Link href="/dashboard" className="text-sm font-medium" style={{ color: 'var(--accent)' }}>
                         Return to the front page →
                     </Link>
                 </div>
@@ -186,7 +209,7 @@ export default function ArticlePage() {
             >
                 <div className="max-w-reading mx-auto flex items-center justify-between">
                     <Link
-                        href="/"
+                        href="/dashboard"
                         className="flex items-center gap-2 text-sm font-medium transition-colors"
                         style={{ color: 'var(--ink-muted)' }}
                     >
@@ -194,7 +217,6 @@ export default function ArticlePage() {
                         Back
                     </Link>
                     <div className="flex items-center gap-3">
-                        <TruthMeterBadge score={article.veracity_score} />
                         <button
                             className="p-2 rounded-sm transition-colors"
                             style={{ color: 'var(--ink-muted)' }}
@@ -221,8 +243,9 @@ export default function ArticlePage() {
                                 {formattedDate}
                             </span>
                             {readingSeconds > 0 && (
-                                <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>
-                                    {Math.floor(readingSeconds / 60)}m {readingSeconds % 60}s read
+                                <span className="text-xs inline-flex items-center gap-1" style={{ color: 'var(--ink-muted)' }}>
+                                    <Clock className="w-3 h-3" />
+                                    {Math.floor(readingSeconds / 60)}m {readingSeconds % 60}s
                                 </span>
                             )}
                         </div>
@@ -261,37 +284,6 @@ export default function ArticlePage() {
                     </motion.header>
 
                     <div className="editorial-rule-thick" />
-
-                    {/* Veracity Check */}
-                    <motion.section
-                        initial={{ opacity: 0, y: 15 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.15, duration: 0.5 }}
-                        className="editorial-card p-6 mb-8"
-                    >
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h3 className="font-serif font-bold text-sm mb-1" style={{ color: 'var(--ink)' }}>
-                                    Veracity Check
-                                </h3>
-                                <p className="text-xs" style={{ color: 'var(--ink-muted)' }}>
-                                    Powered by FactCheck API
-                                </p>
-                            </div>
-                            <TruthMeter score={article.veracity_score} size="lg" />
-                        </div>
-
-                        {article.veracity_claims && article.veracity_claims.length > 0 && (
-                            <div className="mt-4 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
-                                <p className="text-xs mb-2" style={{ color: 'var(--ink-muted)' }}>Related Fact Checks:</p>
-                                {article.veracity_claims.slice(0, 2).map((claim, idx) => (
-                                    <div key={idx} className="text-sm mb-1" style={{ color: 'var(--ink-light)' }}>
-                                        &ldquo;{claim.text}&rdquo; — <span style={{ color: 'var(--accent)' }}>{claim.rating}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </motion.section>
 
                     {/* AI Summary with Typewriter */}
                     <motion.section
@@ -339,7 +331,7 @@ export default function ArticlePage() {
                             <div className="text-sm" style={{ color: 'var(--ink-muted)' }}>
                                 <p className="mb-3">{summaryError}</p>
                                 <button
-                                    onClick={fetchSummary}
+                                    onClick={requestSummary}
                                     className="text-xs font-medium px-3 py-1.5 rounded-sm transition-colors"
                                     style={{ backgroundColor: 'var(--paper-sunken)', color: 'var(--ink)' }}
                                 >
@@ -347,9 +339,19 @@ export default function ArticlePage() {
                                 </button>
                             </div>
                         ) : (
-                            <p className="text-sm" style={{ color: 'var(--ink-muted)' }}>
-                                Loading summary...
-                            </p>
+                            <div className="text-center py-4">
+                                <p className="text-sm mb-4" style={{ color: 'var(--ink-muted)' }}>
+                                    Click below to generate an AI-powered summary of this article.
+                                </p>
+                                <button
+                                    onClick={requestSummary}
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-sm text-sm font-semibold transition-all"
+                                    style={{ backgroundColor: 'var(--ink)', color: 'var(--paper)' }}
+                                >
+                                    <Sparkles className="w-4 h-4" />
+                                    Generate AI Summary
+                                </button>
+                            </div>
                         )}
                     </motion.section>
 

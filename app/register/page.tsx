@@ -46,8 +46,10 @@ export default function RegisterPage() {
         setLoading(true)
         setError(null)
 
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/complete-profile`, {
+            const res = await fetch(`${apiUrl}/api/auth/complete-profile`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

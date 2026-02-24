@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { TruthMeterBadge } from '@/components/TruthMeter'
 
 interface ArticleCardProps {
     id: string
@@ -58,9 +57,7 @@ export function ArticleCard({
                             <span className="text-[10px] font-bold uppercase tracking-widest border-b border-[var(--accent)] text-[var(--accent)] pb-0.5">
                                 {category}
                             </span>
-                            {veracity_score != null && (
-                                <TruthMeterBadge score={veracity_score} />
-                            )}
+
                         </div>
 
                         {/* Title - Newspaper Headline Style */}

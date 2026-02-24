@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { BookOpen, Check, Award, ArrowRight, RotateCcw, ChevronLeft, Calendar } from 'lucide-react'
+import { BookOpen, Check, Award, ArrowRight, RotateCcw, ChevronLeft, Calendar, Lightbulb, Sparkles, Trophy } from 'lucide-react'
+import Link from 'next/link'
 import { useAuth } from '@/lib/auth'
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -12,6 +13,7 @@ interface QuizQuestion {
     question: string
     options: string[]
     points_value: number
+    hint?: string | null
 }
 
 interface QuizData {
@@ -54,13 +56,21 @@ export default function QuizPage() {
     const [submitting, setSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [view, setView] = useState<'list' | 'quiz'>('list')
+    const [generating, setGenerating] = useState(false)
+    const [showHint, setShowHint] = useState<Record<string, boolean>>({})
 
     useEffect(() => {
-        fetchQuizList()
+        if (isAuthenticated) {
+            fetchQuizList()
+        } else {
+            setLoading(false)
+            setError('Sign in to take quizzes and earn points!')
+        }
     }, [isAuthenticated])
 
     const fetchQuizList = async () => {
         setLoading(true)
+        setError(null)
         try {
             const headers: Record<string, string> = {}
             if (token) headers['Authorization'] = `Bearer ${token}`
@@ -71,25 +81,29 @@ export default function QuizPage() {
             })
             if (res.ok) {
                 const data = await res.json()
-                setQuizList(data.quizzes || [])
-                if ((data.quizzes || []).length === 0) {
-                    setError('No quizzes available yet.')
+                const quizzes = data.quizzes || []
+                setQuizList(quizzes)
+                if (quizzes.length === 0) {
+                    // No quizzes exist yet — auto-trigger generation
+                    await generateQuiz()
+                    return
                 }
             } else {
-                // Fallback: try the old weekly endpoint
-                await fetchWeeklyQuiz()
+                // Fallback: try the weekly endpoint directly
+                await generateQuiz()
                 return
             }
         } catch {
-            // Fallback: try weekly
-            await fetchWeeklyQuiz()
+            await generateQuiz()
             return
         } finally {
             setLoading(false)
         }
     }
 
-    const fetchWeeklyQuiz = async () => {
+    const generateQuiz = async () => {
+        setGenerating(true)
+        setError(null)
         try {
             const headers: Record<string, string> = {}
             if (token) headers['Authorization'] = `Bearer ${token}`
@@ -103,15 +117,23 @@ export default function QuizPage() {
                 if (data.questions && data.questions.length > 0) {
                     setQuiz(data)
                     setView('quiz')
+                    // Also refresh the list
+                    const listRes = await fetch(`${apiUrl}/api/quiz/list`, { headers, cache: 'no-store' })
+                    if (listRes.ok) {
+                        const listData = await listRes.json()
+                        setQuizList(listData.quizzes || [])
+                    }
                 } else {
-                    setError('No quiz questions available yet.')
+                    setError('Quiz was created but has no questions yet. Gemini may need a moment — try again!')
                 }
             } else {
-                setError('Unable to load quiz. Please try again later.')
+                const errData = await res.json().catch(() => ({}))
+                setError(errData.detail || 'Unable to generate quiz. Please try again.')
             }
         } catch {
-            setError('Unable to load quiz. Please try again later.')
+            setError('Unable to generate quiz. Check your connection and try again.')
         } finally {
+            setGenerating(false)
             setLoading(false)
         }
     }
@@ -221,21 +243,26 @@ export default function QuizPage() {
         setError(null)
     }
 
-    // ─── Loading ───
-    if (loading) {
+    // ─── Loading / Generating ───
+    if (loading || generating) {
         return (
-            <div className="min-h-screen px-gutter py-12">
-                <div className="max-w-reading mx-auto animate-pulse">
-                    <div className="h-8 rounded w-48 mb-4" style={{ backgroundColor: 'var(--paper-sunken)' }} />
-                    <div className="h-4 rounded w-64 mb-8" style={{ backgroundColor: 'var(--paper-sunken)' }} />
-                    <div className="editorial-card p-8">
-                        <div className="h-6 rounded w-3/4 mb-6" style={{ backgroundColor: 'var(--paper-sunken)' }} />
-                        <div className="space-y-3">
-                            {[1, 2, 3, 4].map(i => (
-                                <div key={i} className="h-12 rounded" style={{ backgroundColor: 'var(--paper-sunken)' }} />
-                            ))}
-                        </div>
-                    </div>
+            <div className="min-h-screen px-gutter py-12 flex items-center justify-center">
+                <div className="text-center">
+                    <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                        className="w-12 h-12 mx-auto mb-6"
+                    >
+                        <BookOpen className="w-12 h-12" style={{ color: 'var(--accent)' }} />
+                    </motion.div>
+                    <h2 className="font-serif text-xl mb-2" style={{ color: 'var(--ink)' }}>
+                        {generating ? 'Generating Quiz...' : 'Loading...'}
+                    </h2>
+                    <p className="text-sm" style={{ color: 'var(--ink-muted)' }}>
+                        {generating
+                            ? "Creating questions from today's news using Gemini AI"
+                            : 'Checking for available quizzes'}
+                    </p>
                 </div>
             </div>
         )
@@ -249,11 +276,22 @@ export default function QuizPage() {
                     <div className="editorial-card p-12 text-center max-w-sm">
                         <BookOpen className="w-10 h-10 mx-auto mb-4" style={{ color: 'var(--ink-muted)' }} />
                         <h2 className="font-serif text-xl mb-2" style={{ color: 'var(--ink)' }}>
-                            No Quizzes Available
+                            {error ? 'Quiz Unavailable' : 'No Quizzes Yet'}
                         </h2>
-                        <p className="text-sm" style={{ color: 'var(--ink-muted)' }}>
-                            {error || 'Check back later for new quizzes.'}
+                        <p className="text-sm mb-6" style={{ color: 'var(--ink-muted)' }}>
+                            {error || 'No quizzes have been created yet.'}
                         </p>
+                        {isAuthenticated && (
+                            <button
+                                onClick={() => generateQuiz()}
+                                disabled={generating}
+                                className="inline-flex items-center gap-2 px-6 py-3 rounded-sm text-sm font-semibold transition-all"
+                                style={{ backgroundColor: 'var(--ink)', color: 'var(--paper)' }}
+                            >
+                                <Sparkles className="w-4 h-4" />
+                                Generate Quiz from Today&apos;s News
+                            </button>
+                        )}
                     </div>
                 </div>
             )
@@ -398,7 +436,7 @@ export default function QuizPage() {
                             </p>
                         )}
 
-                        <div className="flex gap-3 justify-center">
+                        <div className="flex gap-3 justify-center flex-wrap">
                             <button onClick={resetQuiz} className="btn-outline text-xs">
                                 <RotateCcw className="w-4 h-4" />
                                 Try Again
@@ -407,6 +445,13 @@ export default function QuizPage() {
                                 <ChevronLeft className="w-4 h-4" />
                                 All Quizzes
                             </button>
+                            <Link
+                                href="/leaderboard"
+                                className="btn-primary text-xs inline-flex items-center gap-2"
+                            >
+                                <Trophy className="w-4 h-4" />
+                                View Leaderboard
+                            </Link>
                         </div>
                     </motion.div>
                 </div>
@@ -493,6 +538,34 @@ export default function QuizPage() {
                                 )
                             })}
                         </div>
+
+                        {/* Hint Button */}
+                        {question.hint && (
+                            <div className="mt-4">
+                                <button
+                                    onClick={() => setShowHint(prev => ({ ...prev, [question.id]: !prev[question.id] }))}
+                                    className="flex items-center gap-2 text-xs font-medium transition-colors"
+                                    style={{ color: showHint[question.id] ? 'var(--accent)' : 'var(--ink-muted)' }}
+                                >
+                                    <Lightbulb className="w-4 h-4" />
+                                    {showHint[question.id] ? 'Hide Hint' : 'Show Hint'}
+                                </button>
+                                {showHint[question.id] && (
+                                    <motion.div
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        className="mt-3 p-4 rounded-sm text-sm italic"
+                                        style={{
+                                            backgroundColor: 'var(--paper-sunken)',
+                                            color: 'var(--ink-light)',
+                                            borderLeft: '3px solid var(--accent)',
+                                        }}
+                                    >
+                                        💡 {question.hint}
+                                    </motion.div>
+                                )}
+                            </div>
+                        )}
                     </motion.div>
                 </AnimatePresence>
 
@@ -543,6 +616,6 @@ export default function QuizPage() {
                     )}
                 </div>
             </div>
-        </div>
+        </div >
     )
 }

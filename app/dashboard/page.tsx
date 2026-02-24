@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Sparkles, LogIn } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
-import { NewsTicker } from '@/components/ui/NewsTicker'
 import { ArticleCard } from '@/components/ui/ArticleCard'
+import { NewspaperLoader } from '@/components/ui/NewspaperLoader'
 
 interface Article {
     id: string
@@ -16,7 +16,7 @@ interface Article {
     summaries: Array<{ mode: string; summary: string }>
 }
 
-export default function Home() {
+export default function DashboardPage() {
     const { user, isAuthenticated, isLoading: authLoading } = useAuth()
     const [articles, setArticles] = useState<Article[]>([])
     const [loading, setLoading] = useState(true)
@@ -35,7 +35,7 @@ export default function Home() {
 
     useEffect(() => {
         fetchArticles()
-    }, [isAuthenticated]) // Only re-fetch when auth state changes
+    }, [isAuthenticated])
 
     const fetchArticles = async () => {
         setLoading(true)
@@ -49,7 +49,8 @@ export default function Home() {
             }
 
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            const res = await fetch(`${apiUrl}/api/news?page_size=20`, {
+            const timestamp = new Date().getTime();
+            const res = await fetch(`${apiUrl}/api/news?page_size=20&t=${timestamp}`, {
                 headers,
                 cache: 'no-store'
             })
@@ -63,11 +64,6 @@ export default function Home() {
                 (a: any) => a && a.id && a.title
             )
             setArticles(validArticles)
-
-            if (validArticles.length === 0) {
-                // Don't show error if 0 articles, just empty state
-                // setError('No articles available.') 
-            }
         } catch (err) {
             console.error(err)
             setError('Unable to load articles.')
@@ -82,22 +78,10 @@ export default function Home() {
         return s?.summary
     }
 
-    // Safety check for rendering
-    if (!dateString) return null; // Wait for hydration
+    if (!dateString) return null;
 
     return (
         <div className="min-h-screen">
-            {/* Live News Ticker - Commented out for stability */}
-            {/* 
-            <NewsTicker
-                headlines={articles.slice(0, 10).map((a) => ({
-                    id: a.id,
-                    title: a.title,
-                    category: a.category,
-                }))}
-            /> 
-            */}
-
             {/* Hero Section */}
             <section className="px-gutter py-12 md:py-20 text-center max-w-reading mx-auto border-b-4 border-double border-[var(--ink)] mb-12">
                 <div>
@@ -125,13 +109,11 @@ export default function Home() {
                         className="text-xl font-serif italic max-w-2xl mx-auto mb-10"
                         style={{ color: 'var(--ink-light)' }}
                     >
-                        "All the News That's Fit to Print, Summarized by AI"
+                        &quot;All the News That&apos;s Fit to Print, Summarized by AI&quot;
                     </p>
 
                     {/* Mode Toggle */}
-                    <div
-                        className="inline-flex border border-[var(--ink)] mb-8"
-                    >
+                    <div className="inline-flex border border-[var(--ink)] mb-8">
                         <button
                             onClick={() => setSummaryMode('kid')}
                             className="px-6 py-2 text-sm font-bold uppercase tracking-wider transition-all duration-200"
@@ -181,12 +163,7 @@ export default function Home() {
                 </div>
 
                 {loading ? (
-                    <div className="text-center py-32">
-                        <div className="animate-spin w-8 h-8 border-2 border-[var(--ink)] border-t-transparent rounded-full mx-auto mb-4"></div>
-                        <p className="font-serif text-xl italic text-[var(--ink-muted)]">
-                            Fetching latest intelligence from the wire...
-                        </p>
-                    </div>
+                    <NewspaperLoader />
                 ) : error ? (
                     <div className="text-center py-20 border border-dashed border-[var(--ink-muted)] p-8">
                         <p className="font-serif text-2xl mb-3" style={{ color: 'var(--ink)' }}>
@@ -210,7 +187,7 @@ export default function Home() {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-x-8 gap-y-12">
-                        {/* Lead Story (Feature 1) - spans 8 columns */}
+                        {/* Lead Story */}
                         {articles.length > 0 && (
                             <div className="md:col-span-8 border-r border-[#e5e5e5] pr-6">
                                 <ArticleCard
@@ -222,7 +199,7 @@ export default function Home() {
                             </div>
                         )}
 
-                        {/* Second Feature - spans 4 columns */}
+                        {/* Second Feature */}
                         {articles.length > 1 && (
                             <div className="md:col-span-4">
                                 <ArticleCard
@@ -237,7 +214,7 @@ export default function Home() {
                         {/* Divider */}
                         <div className="md:col-span-12 h-px bg-[var(--ink)] my-2 opacity-20" />
 
-                        {/* Remaining Articles - 3 per row */}
+                        {/* Remaining Articles */}
                         {articles.slice(2).map((article, index) => (
                             <div key={article.id} className="md:col-span-4 border-r border-[#e5e5e5] last:border-0 pr-4">
                                 <ArticleCard

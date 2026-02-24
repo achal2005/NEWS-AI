@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useState, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Newspaper } from 'lucide-react'
@@ -12,6 +12,8 @@ function AuthCallbackContent() {
     const { login } = useAuth()
     const [error, setError] = useState<string | null>(null)
 
+    const hasAttemptedLogin = useRef(false)
+
     useEffect(() => {
         const code = searchParams.get('code')
 
@@ -20,16 +22,21 @@ function AuthCallbackContent() {
             return
         }
 
+        // Prevent React StrictMode double-invocation bugs
+        if (hasAttemptedLogin.current) return
+        hasAttemptedLogin.current = true
+
         const handleCallback = async () => {
             try {
                 const result = await login(code)
                 if (result && !result.profileComplete) {
-                    router.push('/register')
+                    router.push('/profile')
                 } else {
                     router.push('/')
                 }
             } catch (err) {
                 setError('Authentication failed. Please try again.')
+                hasAttemptedLogin.current = false // Allow retry on error state if we add a button
             }
         }
 

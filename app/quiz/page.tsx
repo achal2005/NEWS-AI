@@ -1,34 +1,22 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { BookOpen, Check, Award, ArrowRight, RotateCcw, ChevronLeft, Calendar, Lightbulb, Sparkles, Trophy } from 'lucide-react'
-import Link from 'next/link'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/lib/auth'
-
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 interface QuizQuestion {
     id: string
     question: string
     options: string[]
+    correct_answer: string
+    hint?: string
     points_value: number
-    hint?: string | null
 }
 
-interface QuizData {
+interface Quiz {
     id: string
     week_start: string
     week_end: string
     questions: QuizQuestion[]
-}
-
-interface QuizResult {
-    score: number
-    max_score: number
-    points_earned: number
-    correct_answers: number
-    total_questions: number
 }
 
 interface QuizListItem {
@@ -36,586 +24,344 @@ interface QuizListItem {
     week_start: string
     week_end: string
     question_count: number
-}
-
-function formatDateRange(start: string, end: string) {
-    const s = new Date(start + 'T00:00:00')
-    const e = new Date(end + 'T00:00:00')
-    const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' }
-    return `${s.toLocaleDateString('en-US', opts)} – ${e.toLocaleDateString('en-US', { ...opts, year: 'numeric' })}`
+    is_active: boolean
 }
 
 export default function QuizPage() {
-    const { token, isAuthenticated } = useAuth()
-    const [quizList, setQuizList] = useState<QuizListItem[]>([])
-    const [quiz, setQuiz] = useState<QuizData | null>(null)
+    const { token } = useAuth()
+    const [quizzes, setQuizzes] = useState<QuizListItem[]>([])
+    const [activeQuiz, setActiveQuiz] = useState<Quiz | null>(null)
     const [currentQ, setCurrentQ] = useState(0)
-    const [answers, setAnswers] = useState<Record<string, string>>({})
-    const [result, setResult] = useState<QuizResult | null>(null)
+    const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null)
+    const [answerResult, setAnswerResult] = useState<'correct' | 'incorrect' | null>(null)
+    const [score, setScore] = useState(0)
+    const [answers, setAnswers] = useState<{ question_id: string; selected_answer: string }[]>([])
+    const [phase, setPhase] = useState<'list' | 'playing' | 'results'>('list')
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
-    const [error, setError] = useState<string | null>(null)
-    const [view, setView] = useState<'list' | 'quiz'>('list')
-    const [generating, setGenerating] = useState(false)
-    const [showHint, setShowHint] = useState<Record<string, boolean>>({})
+    const [streak, setStreak] = useState(0)
 
     useEffect(() => {
-        if (isAuthenticated) {
-            fetchQuizList()
+        const fetchQuizzes = async () => {
+            try {
+                // Ensure a weekly quiz exists (auto-generates if none)
+                await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz/weekly`, { cache: 'no-store' })
+
+                // Now list all available quizzes
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz/list`, { cache: 'no-store' })
+                if (res.ok) {
+                    const data = await res.json()
+                    setQuizzes(data.quizzes || data || [])
+                }
+            } catch (err) {
+                console.error('Failed to fetch quizzes:', err)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchQuizzes()
+    }, [])
+
+    const startQuiz = useCallback(async (quizId: string) => {
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz/${quizId}`, { cache: 'no-store' })
+            if (res.ok) {
+                const data = await res.json()
+                setActiveQuiz(data)
+                setCurrentQ(0)
+                setScore(0)
+                setAnswers([])
+                setStreak(0)
+                setPhase('playing')
+            }
+        } catch (err) {
+            console.error('Failed to start quiz:', err)
+        }
+    }, [])
+
+    const handleAnswer = (answer: string) => {
+        if (selectedAnswer) return
+        setSelectedAnswer(answer)
+
+        const question = activeQuiz?.questions[currentQ]
+        const isCorrect = answer === question?.correct_answer
+
+        setAnswerResult(isCorrect ? 'correct' : 'incorrect')
+        if (isCorrect) {
+            setScore(prev => prev + (question?.points_value || 20))
+            setStreak(prev => prev + 1)
         } else {
-            setLoading(false)
-            setError('Sign in to take quizzes and earn points!')
+            setStreak(0)
         }
-    }, [isAuthenticated])
 
-    const fetchQuizList = async () => {
-        setLoading(true)
-        setError(null)
-        try {
-            const headers: Record<string, string> = {}
-            if (token) headers['Authorization'] = `Bearer ${token}`
+        setAnswers(prev => [...prev, {
+            question_id: question?.id || '',
+            selected_answer: answer,
+        }])
 
-            const res = await fetch(`${apiUrl}/api/quiz/list`, {
-                headers,
-                cache: 'no-store'
-            })
-            if (res.ok) {
-                const data = await res.json()
-                const quizzes = data.quizzes || []
-                setQuizList(quizzes)
-                if (quizzes.length === 0) {
-                    // No quizzes exist yet — auto-trigger generation
-                    await generateQuiz()
-                    return
-                }
+        // Auto-advance after 1.5s
+        setTimeout(() => {
+            if (activeQuiz && currentQ < activeQuiz.questions.length - 1) {
+                setCurrentQ(prev => prev + 1)
+                setSelectedAnswer(null)
+                setAnswerResult(null)
             } else {
-                // Fallback: try the weekly endpoint directly
-                await generateQuiz()
-                return
+                setPhase('results')
             }
-        } catch {
-            await generateQuiz()
-            return
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    const generateQuiz = async () => {
-        setGenerating(true)
-        setError(null)
-        try {
-            const headers: Record<string, string> = {}
-            if (token) headers['Authorization'] = `Bearer ${token}`
-
-            const res = await fetch(`${apiUrl}/api/quiz/weekly`, {
-                headers,
-                cache: 'no-store'
-            })
-            if (res.ok) {
-                const data = await res.json()
-                if (data.questions && data.questions.length > 0) {
-                    setQuiz(data)
-                    setView('quiz')
-                    // Also refresh the list
-                    const listRes = await fetch(`${apiUrl}/api/quiz/list`, { headers, cache: 'no-store' })
-                    if (listRes.ok) {
-                        const listData = await listRes.json()
-                        setQuizList(listData.quizzes || [])
-                    }
-                } else {
-                    setError('Quiz was created but has no questions yet. Gemini may need a moment — try again!')
-                }
-            } else {
-                const errData = await res.json().catch(() => ({}))
-                setError(errData.detail || 'Unable to generate quiz. Please try again.')
-            }
-        } catch {
-            setError('Unable to generate quiz. Check your connection and try again.')
-        } finally {
-            setGenerating(false)
-            setLoading(false)
-        }
-    }
-
-    const loadQuiz = async (quizId: string) => {
-        setLoading(true)
-        setError(null)
-        try {
-            const headers: Record<string, string> = {}
-            if (token) headers['Authorization'] = `Bearer ${token}`
-
-            const res = await fetch(`${apiUrl}/api/quiz/${quizId}`, {
-                headers,
-                cache: 'no-store'
-            })
-            if (res.ok) {
-                const data = await res.json()
-                if (data.questions && data.questions.length > 0) {
-                    setQuiz(data)
-                    setCurrentQ(0)
-                    setAnswers({})
-                    setResult(null)
-                    setView('quiz')
-                } else {
-                    setError('This quiz has no questions yet.')
-                }
-            } else {
-                setError('Unable to load this quiz.')
-            }
-        } catch {
-            setError('Unable to load quiz. Please try again later.')
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    const selectAnswer = (questionId: string, option: string) => {
-        if (result) return
-        setAnswers(prev => ({ ...prev, [questionId]: option }))
-    }
-
-    const nextQuestion = () => {
-        if (quiz && currentQ < quiz.questions.length - 1) {
-            setCurrentQ(currentQ + 1)
-        }
-    }
-
-    const prevQuestion = () => {
-        if (currentQ > 0) setCurrentQ(currentQ - 1)
+        }, 1500)
     }
 
     const submitQuiz = async () => {
-        if (!quiz) return
+        if (!token || !activeQuiz) return
         setSubmitting(true)
-
         try {
-            const answerList = Object.entries(answers).map(([questionId, selectedAnswer]) => ({
-                question_id: questionId,
-                selected_answer: selectedAnswer,
-            }))
-
-            const res = await fetch(`${apiUrl}/api/quiz/submit`, {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz/submit`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                    Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ answers: answerList }),
+                body: JSON.stringify({
+                    quiz_id: activeQuiz.id,
+                    answers,
+                }),
             })
-            if (res.ok) {
-                const data = await res.json()
-                setResult(data)
-            } else {
-                setResult({
-                    score: 0,
-                    max_score: quiz.questions.length * 20,
-                    points_earned: 0,
-                    correct_answers: 0,
-                    total_questions: quiz.questions.length,
-                })
-            }
-        } catch {
-            setResult({
-                score: 0,
-                max_score: quiz.questions.length * 20,
-                points_earned: 0,
-                correct_answers: 0,
-                total_questions: quiz.questions.length,
-            })
+        } catch (err) {
+            console.error('Failed to submit quiz:', err)
         } finally {
             setSubmitting(false)
         }
     }
 
-    const resetQuiz = () => {
-        setCurrentQ(0)
-        setAnswers({})
-        setResult(null)
-    }
+    const letterLabels = ['A', 'B', 'C', 'D']
 
-    const backToList = () => {
-        setView('list')
-        setQuiz(null)
-        setCurrentQ(0)
-        setAnswers({})
-        setResult(null)
-        setError(null)
-    }
-
-    // ─── Loading / Generating ───
-    if (loading || generating) {
+    // ── LIST VIEW ──
+    if (phase === 'list') {
         return (
-            <div className="min-h-screen px-gutter py-12 flex items-center justify-center">
-                <div className="text-center">
-                    <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-                        className="w-12 h-12 mx-auto mb-6"
-                    >
-                        <BookOpen className="w-12 h-12" style={{ color: 'var(--accent)' }} />
-                    </motion.div>
-                    <h2 className="font-serif text-xl mb-2" style={{ color: 'var(--ink)' }}>
-                        {generating ? 'Generating Quiz...' : 'Loading...'}
-                    </h2>
-                    <p className="text-sm" style={{ color: 'var(--ink-muted)' }}>
-                        {generating
-                            ? "Creating questions from today's news using Gemini AI"
-                            : 'Checking for available quizzes'}
-                    </p>
-                </div>
-            </div>
-        )
-    }
-
-    // ─── Quiz List View ───
-    if (view === 'list') {
-        if (error || quizList.length === 0) {
-            return (
-                <div className="min-h-screen px-gutter py-12 flex items-center justify-center">
-                    <div className="editorial-card p-12 text-center max-w-sm">
-                        <BookOpen className="w-10 h-10 mx-auto mb-4" style={{ color: 'var(--ink-muted)' }} />
-                        <h2 className="font-serif text-xl mb-2" style={{ color: 'var(--ink)' }}>
-                            {error ? 'Quiz Unavailable' : 'No Quizzes Yet'}
-                        </h2>
-                        <p className="text-sm mb-6" style={{ color: 'var(--ink-muted)' }}>
-                            {error || 'No quizzes have been created yet.'}
-                        </p>
-                        {isAuthenticated && (
-                            <button
-                                onClick={() => generateQuiz()}
-                                disabled={generating}
-                                className="inline-flex items-center gap-2 px-6 py-3 rounded-sm text-sm font-semibold transition-all"
-                                style={{ backgroundColor: 'var(--ink)', color: 'var(--paper)' }}
-                            >
-                                <Sparkles className="w-4 h-4" />
-                                Generate Quiz from Today&apos;s News
-                            </button>
-                        )}
+            <div className="flex-1 flex flex-col">
+                <header className="h-20 border-b-3 border-ink flex items-center justify-between px-8 bg-white/50">
+                    <div className="flex items-center gap-4">
+                        <h2 className="text-2xl font-black uppercase tracking-tight font-sans">Pop Quiz</h2>
+                        <span className="bg-ink text-primary px-2 py-1 text-xs font-mono font-bold">
+                            <span className="material-symbols-outlined text-sm align-middle mr-1">bolt</span>
+                            TEST YOUR KNOWLEDGE
+                        </span>
                     </div>
-                </div>
-            )
-        }
+                </header>
 
-        return (
-            <div className="min-h-screen px-gutter py-12">
-                <div className="max-w-reading mx-auto">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mb-8"
-                    >
-                        <div className="flex items-center gap-3 mb-2">
-                            <BookOpen className="w-5 h-5" style={{ color: 'var(--accent)' }} />
-                            <h1 className="font-serif text-2xl font-bold" style={{ color: 'var(--ink)' }}>
-                                {new Date().toLocaleDateString('en-US', { month: 'long' })} Quizzes
-                            </h1>
-                        </div>
-                        <p className="text-sm" style={{ color: 'var(--ink-muted)' }}>
-                            Test your knowledge on {new Date().toLocaleDateString('en-US', { month: 'long' })}&apos;s biggest headlines
-                        </p>
-                    </motion.div>
-
-                    <div className="space-y-4">
-                        {quizList.map((q, idx) => (
-                            <motion.button
-                                key={q.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: idx * 0.1 }}
-                                onClick={() => loadQuiz(q.id)}
-                                className="w-full text-left editorial-card p-6 group hover:shadow-md transition-all duration-300"
-                            >
-                                <div className="flex items-center justify-between">
+                <div className="flex-1 p-8">
+                    <div className="max-w-3xl mx-auto space-y-4">
+                        {loading ? (
+                            <div className="text-center py-20">
+                                <span className="material-symbols-outlined text-6xl text-ink/20 animate-pulse">quiz</span>
+                                <p className="font-mono text-sm text-ink/60 mt-4">Loading quizzes...</p>
+                            </div>
+                        ) : quizzes.length === 0 ? (
+                            <div className="text-center py-20 border-3 border-ink border-dashed p-12 bg-white">
+                                <span className="material-symbols-outlined text-6xl text-ink/20">quiz</span>
+                                <h3 className="font-display font-bold text-2xl mt-4">No Quizzes Available</h3>
+                                <p className="font-mono text-sm text-ink/60 mt-2">
+                                    Check back later — new quizzes drop weekly.
+                                </p>
+                            </div>
+                        ) : (
+                            quizzes.map((quiz) => (
+                                <button
+                                    key={quiz.id}
+                                    onClick={() => startQuiz(quiz.id)}
+                                    className="brutal-card w-full text-left bg-white border-3 border-ink shadow-hard p-6 flex items-center justify-between group"
+                                >
                                     <div>
                                         <div className="flex items-center gap-2 mb-2">
-                                            <Calendar className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-                                            <span
-                                                className="text-xs font-semibold uppercase tracking-wider"
-                                                style={{ color: 'var(--accent)' }}
-                                            >
-                                                Week {idx + 1}
+                                            <span className="bg-primary border-2 border-ink px-2 py-0.5 text-xs font-bold shadow-hard-sm">
+                                                {quiz.question_count} QUESTIONS
                                             </span>
+                                            {quiz.is_active && (
+                                                <span className="flex items-center gap-1 text-xs font-mono text-alert font-bold">
+                                                    <span className="w-2 h-2 rounded-full bg-alert animate-pulse" />
+                                                    LIVE
+                                                </span>
+                                            )}
                                         </div>
-                                        <h3
-                                            className="font-serif text-lg font-bold mb-1 group-hover:text-[var(--accent)] transition-colors"
-                                            style={{ color: 'var(--ink)' }}
-                                        >
-                                            {formatDateRange(q.week_start, q.week_end)}
+                                        <h3 className="font-display font-bold text-xl group-hover:underline decoration-primary decoration-3">
+                                            Weekly Quiz: {new Date(quiz.week_start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} — {new Date(quiz.week_end).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                         </h3>
-                                        <p className="text-sm" style={{ color: 'var(--ink-muted)' }}>
-                                            {q.question_count} questions · {q.question_count * 20} points possible
-                                        </p>
                                     </div>
-                                    <ArrowRight
-                                        className="w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        style={{ color: 'var(--accent)' }}
-                                    />
-                                </div>
-                            </motion.button>
-                        ))}
+                                    <span className="material-symbols-outlined text-3xl group-hover:text-primary transition-colors">
+                                        play_circle
+                                    </span>
+                                </button>
+                            ))
+                        )}
                     </div>
                 </div>
             </div>
         )
     }
 
-    // ─── Error / no quiz ───
-    if (error || !quiz) {
-        return (
-            <div className="min-h-screen px-gutter py-12 flex items-center justify-center">
-                <div className="editorial-card p-12 text-center max-w-sm">
-                    <BookOpen className="w-10 h-10 mx-auto mb-4" style={{ color: 'var(--ink-muted)' }} />
-                    <h2 className="font-serif text-xl mb-2" style={{ color: 'var(--ink)' }}>
-                        No Quiz Available
-                    </h2>
-                    <p className="text-sm mb-6" style={{ color: 'var(--ink-muted)' }}>
-                        {error || 'Check back later for the weekly quiz.'}
-                    </p>
-                    <button onClick={backToList} className="btn-outline text-xs">
-                        <ChevronLeft className="w-4 h-4" />
-                        Back to Quizzes
-                    </button>
-                </div>
-            </div>
-        )
-    }
+    // ── RESULTS VIEW ──
+    if (phase === 'results') {
+        const totalPossible = activeQuiz?.questions.reduce((sum, q) => sum + (q.points_value || 20), 0) || 0
+        const pct = totalPossible > 0 ? Math.round((score / totalPossible) * 100) : 0
 
-    // ─── Results view ───
-    if (result) {
-        const percentage = result.max_score > 0
-            ? Math.round((result.score / result.max_score) * 100)
-            : 0
         return (
-            <div className="min-h-screen px-gutter py-12">
-                <div className="max-w-reading mx-auto">
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="editorial-card p-8 md:p-12 text-center"
-                    >
-                        <div
-                            className="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center"
-                            style={{
-                                backgroundColor: percentage >= 70 ? 'var(--success)' : percentage >= 40 ? 'var(--warning)' : 'var(--danger)',
-                                color: 'var(--paper)',
-                            }}
-                        >
-                            <Award className="w-8 h-8" />
+            <div className="flex-1 flex items-center justify-center p-8">
+                <div className="relative w-full max-w-lg">
+                    <div className="absolute inset-0 translate-x-3 translate-y-3 bg-ink border-3 border-ink" />
+                    <div className="relative bg-canvas border-3 border-ink shadow-hard overflow-hidden">
+                        <div className="bg-primary border-b-3 border-ink p-8 text-center">
+                            <span className="material-symbols-outlined text-6xl mb-4 block">
+                                {pct >= 80 ? 'emoji_events' : pct >= 50 ? 'thumb_up' : 'sentiment_neutral'}
+                            </span>
+                            <h2 className="font-display font-black text-4xl">
+                                {pct >= 80 ? 'EXCELLENT!' : pct >= 50 ? 'NICE WORK!' : 'KEEP LEARNING!'}
+                            </h2>
                         </div>
-
-                        <h2 className="font-serif text-3xl font-bold mb-2" style={{ color: 'var(--ink)' }}>
-                            {percentage >= 70 ? 'Excellent!' : percentage >= 40 ? 'Good Effort!' : 'Keep Learning!'}
-                        </h2>
-
-                        <p className="text-sm mb-8" style={{ color: 'var(--ink-muted)' }}>
-                            {result.correct_answers} of {result.total_questions} correct — {result.score} / {result.max_score} points
-                        </p>
-
-                        {/* Score bar */}
-                        <div className="max-w-xs mx-auto mb-8">
-                            <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--paper-sunken)' }}>
-                                <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${percentage}%` }}
-                                    transition={{ delay: 0.3, duration: 0.8, ease: 'easeOut' }}
-                                    className="h-full rounded-full"
-                                    style={{
-                                        backgroundColor: percentage >= 70 ? 'var(--success)' : percentage >= 40 ? 'var(--warning)' : 'var(--danger)',
-                                    }}
-                                />
+                        <div className="p-8 text-center">
+                            <div className="lcd-text text-6xl font-black mb-2">{pct}%</div>
+                            <p className="font-mono text-sm text-ink/60 mb-6">
+                                {score} / {totalPossible} POINTS
+                            </p>
+                            <div className="flex gap-4 justify-center">
+                                <button
+                                    onClick={() => { submitQuiz(); setPhase('list') }}
+                                    disabled={submitting}
+                                    className="px-6 py-3 bg-ink text-primary border-3 border-ink font-bold shadow-hard hover:bg-primary hover:text-ink transition-colors"
+                                >
+                                    {submitting ? 'SAVING...' : 'SAVE & EXIT'}
+                                </button>
+                                <button
+                                    onClick={() => setPhase('list')}
+                                    className="px-6 py-3 bg-white border-3 border-ink font-bold shadow-hard hover:bg-paper-accent transition-colors"
+                                >
+                                    BACK TO LIST
+                                </button>
                             </div>
-                            <p className="text-xs mt-2 font-semibold" style={{ color: 'var(--ink-muted)' }}>
-                                {percentage}% score
-                            </p>
                         </div>
-
-                        {result.points_earned > 0 && (
-                            <p className="text-sm font-semibold mb-8" style={{ color: 'var(--accent)' }}>
-                                +{result.points_earned} points earned!
-                            </p>
-                        )}
-
-                        <div className="flex gap-3 justify-center flex-wrap">
-                            <button onClick={resetQuiz} className="btn-outline text-xs">
-                                <RotateCcw className="w-4 h-4" />
-                                Try Again
-                            </button>
-                            <button onClick={backToList} className="btn-outline text-xs">
-                                <ChevronLeft className="w-4 h-4" />
-                                All Quizzes
-                            </button>
-                            <Link
-                                href="/leaderboard"
-                                className="btn-primary text-xs inline-flex items-center gap-2"
-                            >
-                                <Trophy className="w-4 h-4" />
-                                View Leaderboard
-                            </Link>
-                        </div>
-                    </motion.div>
+                    </div>
                 </div>
             </div>
         )
     }
 
-    // ─── Quiz view ───
-    const question = quiz.questions[currentQ]
-    const progress = ((currentQ + 1) / quiz.questions.length) * 100
-    const allAnswered = quiz.questions.every(q => answers[q.id] !== undefined)
+    // ── PLAYING VIEW ──
+    const question = activeQuiz?.questions[currentQ]
+    if (!question) return null
 
     return (
-        <div className="min-h-screen px-gutter py-12">
-            <div className="max-w-reading mx-auto">
-                {/* Header */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-8"
-                >
-                    <button
-                        onClick={backToList}
-                        className="flex items-center gap-1 text-xs font-medium mb-4 transition-colors"
-                        style={{ color: 'var(--ink-muted)' }}
-                    >
-                        <ChevronLeft className="w-3.5 h-3.5" />
-                        Back to Quizzes
-                    </button>
-                    <div className="flex items-center gap-3 mb-2">
-                        <BookOpen className="w-5 h-5" style={{ color: 'var(--accent)' }} />
-                        <h1 className="font-serif text-2xl font-bold" style={{ color: 'var(--ink)' }}>
-                            {formatDateRange(quiz.week_start, quiz.week_end)}
-                        </h1>
+        <div className="flex-1 flex items-center justify-center p-4 md:p-8 relative">
+            {/* Background Grid */}
+            <div className="absolute inset-0 z-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#121212 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+
+            <div className="relative w-full max-w-2xl z-10">
+                {/* Depth shadow card */}
+                <div className="absolute inset-0 translate-x-3 translate-y-3 bg-ink border-3 border-ink" />
+
+                {/* Main Card */}
+                <div className="relative bg-canvas border-3 border-ink shadow-hard overflow-hidden flex flex-col">
+                    {/* Card Header */}
+                    <header className="flex items-center justify-between border-b-[4px] border-ink bg-white p-4 md:px-6">
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-8 w-8 items-center justify-center bg-primary border-2 border-ink shadow-hard-sm">
+                                <span className="material-symbols-outlined text-ink text-xl font-bold">flash_on</span>
+                            </div>
+                            <div>
+                                <h2 className="font-mono text-sm font-bold tracking-tight text-ink uppercase leading-none">
+                                    POP_QUIZ
+                                </h2>
+                                <p className="text-xs font-mono text-ink/60 mt-0.5">
+                                    Q. {String(currentQ + 1).padStart(2, '0')} / {String(activeQuiz?.questions.length || 0).padStart(2, '0')}
+                                </p>
+                            </div>
+                        </div>
+
+                        {streak > 1 && (
+                            <div className="flex items-center gap-2 px-3 py-1 bg-ink text-primary rounded-full border-2 border-transparent">
+                                <span className="material-symbols-outlined text-sm">local_fire_department</span>
+                                <span className="font-mono text-xs font-bold tracking-wider">STREAK: {streak}X</span>
+                            </div>
+                        )}
+                    </header>
+
+                    {/* Timer Bar */}
+                    <div className="relative w-full h-10 bg-paper-grey border-b-[4px] border-ink flex items-center px-4 overflow-hidden">
+                        <div className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-orange-500 to-red-600 animate-fuse-burn w-full origin-left z-0" />
+                        <div className="relative z-10 flex justify-between w-full font-mono text-xs font-bold tracking-wider text-white mix-blend-difference">
+                            <span>FUSE_TIMER_ACTIVE</span>
+                            <span>SCORE: {score}</span>
+                        </div>
                     </div>
-                    <p className="text-sm" style={{ color: 'var(--ink-muted)' }}>
-                        Question {currentQ + 1} of {quiz.questions.length}
-                    </p>
-                </motion.div>
 
-                {/* Progress Bar */}
-                <div className="h-1 rounded-full mb-8 overflow-hidden" style={{ backgroundColor: 'var(--paper-sunken)' }}>
-                    <motion.div
-                        className="h-full rounded-full"
-                        style={{ backgroundColor: 'var(--ink)' }}
-                        animate={{ width: `${progress}%` }}
-                        transition={{ duration: 0.4 }}
-                    />
-                </div>
-
-                {/* Question Card */}
-                <AnimatePresence mode="wait">
-                    <motion.div
-                        key={currentQ}
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.25 }}
-                        className="editorial-card p-6 md:p-8 mb-6"
-                    >
-                        <h3 className="font-serif font-bold text-lg mb-6" style={{ color: 'var(--ink)' }}>
+                    {/* Question Area */}
+                    <div className="p-6 md:p-10 flex flex-col gap-8 bg-canvas">
+                        <h1 className="font-display text-2xl md:text-4xl font-medium leading-[1.1] text-ink text-center md:text-left">
                             {question.question}
-                        </h3>
+                        </h1>
 
-                        <div className="space-y-2">
-                            {question.options.map((opt, idx) => {
-                                const selected = answers[question.id] === opt
+                        {/* Answer Options */}
+                        <div className="grid grid-cols-1 gap-4 w-full">
+                            {question.options.map((option, i) => {
+                                const isSelected = selectedAnswer === option
+                                const isCorrect = answerResult && option === question.correct_answer
+                                const isWrong = answerResult === 'incorrect' && isSelected
+
+                                let bgClass = 'bg-white group-hover:bg-paper-accent'
+                                let labelBg = 'bg-ink text-canvas group-hover:bg-primary group-hover:text-ink'
+                                let extraClass = ''
+
+                                if (isCorrect) {
+                                    bgClass = 'bg-primary'
+                                    labelBg = 'bg-white text-ink'
+                                } else if (isWrong) {
+                                    bgClass = 'bg-alert'
+                                    labelBg = 'bg-white text-ink'
+                                    extraClass = 'animate-shake'
+                                }
+
                                 return (
                                     <button
-                                        key={idx}
-                                        onClick={() => selectAnswer(question.id, opt)}
-                                        className="w-full text-left p-4 rounded-sm text-sm transition-all"
-                                        style={{
-                                            backgroundColor: selected ? 'var(--ink)' : 'var(--paper-sunken)',
-                                            color: selected ? 'var(--paper)' : 'var(--ink)',
-                                            border: `1.5px solid ${selected ? 'var(--ink)' : 'var(--border)'}`,
-                                        }}
+                                        key={i}
+                                        onClick={() => handleAnswer(option)}
+                                        disabled={!!selectedAnswer}
+                                        className={`group relative w-full text-left outline-none focus:outline-none ${extraClass} ${!selectedAnswer ? 'transition-transform active:translate-y-1 active:shadow-none hover:-translate-y-1 hover:shadow-hard' : ''
+                                            }`}
                                     >
-                                        <span className="font-medium mr-3" style={{ opacity: 0.5 }}>
-                                            {String.fromCharCode(65 + idx)}.
-                                        </span>
-                                        {opt}
+                                        <div className="absolute inset-0 bg-ink translate-x-1 translate-y-1" />
+                                        <div className={`relative flex items-center gap-4 ${bgClass} border-3 border-ink p-4 transition-colors`}>
+                                            <div className={`flex h-10 w-10 shrink-0 items-center justify-center font-mono text-lg font-bold border-2 border-ink transition-colors ${labelBg}`}>
+                                                {letterLabels[i]}
+                                            </div>
+                                            <span className="font-sans text-lg font-bold text-ink">{option}</span>
+                                            {isCorrect && (
+                                                <span className="material-symbols-outlined ml-auto text-2xl animate-bounce">check_circle</span>
+                                            )}
+                                            {isWrong && (
+                                                <span className="material-symbols-outlined ml-auto text-2xl">close</span>
+                                            )}
+                                        </div>
                                     </button>
                                 )
                             })}
                         </div>
 
-                        {/* Hint Button */}
-                        {question.hint && (
-                            <div className="mt-4">
-                                <button
-                                    onClick={() => setShowHint(prev => ({ ...prev, [question.id]: !prev[question.id] }))}
-                                    className="flex items-center gap-2 text-xs font-medium transition-colors"
-                                    style={{ color: showHint[question.id] ? 'var(--accent)' : 'var(--ink-muted)' }}
-                                >
-                                    <Lightbulb className="w-4 h-4" />
-                                    {showHint[question.id] ? 'Hide Hint' : 'Show Hint'}
-                                </button>
-                                {showHint[question.id] && (
-                                    <motion.div
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: 'auto' }}
-                                        className="mt-3 p-4 rounded-sm text-sm italic"
-                                        style={{
-                                            backgroundColor: 'var(--paper-sunken)',
-                                            color: 'var(--ink-light)',
-                                            borderLeft: '3px solid var(--accent)',
-                                        }}
-                                    >
-                                        💡 {question.hint}
-                                    </motion.div>
-                                )}
+                        {/* Hint */}
+                        {selectedAnswer && question.hint && (
+                            <div className="border-3 border-ink border-dashed bg-highlight/10 p-4 font-mono text-sm">
+                                <span className="font-bold">HINT:</span> {question.hint}
                             </div>
                         )}
-                    </motion.div>
-                </AnimatePresence>
-
-                {/* Navigation */}
-                <div className="flex items-center justify-between">
-                    <button
-                        onClick={prevQuestion}
-                        disabled={currentQ === 0}
-                        className="text-sm font-medium disabled:opacity-30 transition-opacity"
-                        style={{ color: 'var(--ink-muted)' }}
-                    >
-                        ← Previous
-                    </button>
-
-                    <div className="flex gap-1.5">
-                        {quiz.questions.map((q, i) => (
-                            <button
-                                key={i}
-                                onClick={() => setCurrentQ(i)}
-                                className="w-2.5 h-2.5 rounded-full transition-all"
-                                style={{
-                                    backgroundColor: answers[q.id] !== undefined
-                                        ? 'var(--ink)'
-                                        : i === currentQ
-                                            ? 'var(--accent)'
-                                            : 'var(--border)',
-                                }}
-                            />
-                        ))}
                     </div>
 
-                    {currentQ < quiz.questions.length - 1 ? (
-                        <button
-                            onClick={nextQuestion}
-                            className="text-sm font-medium flex items-center gap-1"
-                            style={{ color: 'var(--ink)' }}
-                        >
-                            Next <ArrowRight className="w-4 h-4" />
-                        </button>
-                    ) : (
-                        <button
-                            onClick={submitQuiz}
-                            disabled={!allAnswered || submitting}
-                            className="btn-primary text-xs disabled:opacity-40"
-                        >
-                            {submitting ? 'Submitting...' : 'Submit'}
-                        </button>
-                    )}
+                    {/* Footer */}
+                    <div className="bg-paper-accent border-t-[4px] border-ink p-3 flex justify-between items-center font-mono text-xs uppercase tracking-wider text-ink/70">
+                        <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                            <span>QUIZ_ACTIVE</span>
+                        </div>
+                        <span>PTS: {question.points_value || 20}</span>
+                    </div>
                 </div>
             </div>
-        </div >
+        </div>
     )
 }

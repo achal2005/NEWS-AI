@@ -1,265 +1,190 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { Sparkles, LogIn } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
-import { ArticleCard } from '@/components/ui/ArticleCard'
+import { NewsTicker } from '@/components/ui/NewsTicker'
 import { NewspaperLoader } from '@/components/ui/NewspaperLoader'
+import { ArticleCard } from '@/components/ui/ArticleCard'
 
 interface Article {
     id: string
     title: string
+    content: string
     category: string
+    source: string
+    url: string
+    image_url: string | null
     published_at: string
-    veracity_score?: number
-    summaries: Array<{ mode: string; summary: string }>
+}
+
+// Repeating pattern for newspaper-style varied card sizes (desktop only)
+const GRID_PATTERN: Array<{ cols: string; rows: string; size: 'featured' | 'normal' | 'tall' | 'wide' }> = [
+    { cols: 'md:col-span-2', rows: 'md:row-span-2', size: 'featured' },
+    { cols: '', rows: '', size: 'normal' },
+    { cols: '', rows: 'md:row-span-2', size: 'tall' },
+    { cols: 'md:col-span-2', rows: '', size: 'wide' },
+    { cols: '', rows: '', size: 'normal' },
+    { cols: '', rows: '', size: 'normal' },
+    { cols: '', rows: 'md:row-span-2', size: 'tall' },
+    { cols: '', rows: '', size: 'normal' },
+]
+
+function getGridClass(index: number) {
+    const pattern = GRID_PATTERN[index % GRID_PATTERN.length]
+    return {
+        className: `col-span-1 ${pattern.cols} ${pattern.rows}`.trim(),
+        size: pattern.size,
+    }
 }
 
 export default function DashboardPage() {
-    const { user, isAuthenticated, isLoading: authLoading } = useAuth()
+    const { user } = useAuth()
     const [articles, setArticles] = useState<Article[]>([])
     const [loading, setLoading] = useState(true)
-    const [summaryMode, setSummaryMode] = useState<'kid' | 'pro'>('pro')
+    const [refreshing, setRefreshing] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const [dateString, setDateString] = useState('')
 
-    useEffect(() => {
-        setDateString(new Date().toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-        }))
+    const fetchArticles = useCallback(async (retries = 2) => {
+        setLoading(true)
+        setError(null)
+        for (let attempt = 0; attempt <= retries; attempt++) {
+            try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/news?page_size=20`, {
+                    cache: 'no-store',
+                })
+                if (res.ok) {
+                    const data = await res.json()
+                    setArticles(data.items || [])
+                    setLoading(false)
+                    return
+                }
+            } catch (err) {
+                console.error(`Fetch attempt ${attempt + 1} failed:`, err)
+                if (attempt < retries) {
+                    await new Promise(r => setTimeout(r, 2000 * (attempt + 1)))
+                }
+            }
+        }
+        setError('Could not reach the server. It may be waking up — try again in a moment.')
+        setLoading(false)
     }, [])
 
     useEffect(() => {
         fetchArticles()
-    }, [isAuthenticated])
+    }, [fetchArticles])
 
-    const fetchArticles = async () => {
-        setLoading(true)
-        setError(null)
-
+    const refreshArticles = async () => {
+        setRefreshing(true)
         try {
-            const headers: Record<string, string> = {}
-            const token = localStorage.getItem('token')
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`
+            // Call the combined refresh endpoint (NewsAPI + RSS feeds)
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/news/refresh`, { cache: 'no-store' })
+            if (res.ok) {
+                const data = await res.json()
+                console.log('News refresh result:', data)
             }
-
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-            const timestamp = new Date().getTime();
-            const res = await fetch(`${apiUrl}/api/news?page_size=20&t=${timestamp}`, {
-                headers,
-                cache: 'no-store'
-            })
-
-            if (!res.ok) {
-                throw new Error('Failed to fetch articles')
-            }
-
-            const data = await res.json()
-            const validArticles = (data.items || []).filter(
-                (a: any) => a && a.id && a.title
-            )
-            setArticles(validArticles)
         } catch (err) {
-            console.error(err)
-            setError('Unable to load articles.')
-            setArticles([])
-        } finally {
-            setLoading(false)
+            console.error('News refresh failed:', err)
         }
+        // Now re-fetch articles from the database
+        await fetchArticles(0)
+        setRefreshing(false)
     }
 
-    const getSummary = (article: Article) => {
-        const s = article.summaries?.find((s) => s.mode === summaryMode)
-        return s?.summary
+    const formatDate = (date: string) => {
+        return new Date(date).toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+        }).toUpperCase()
     }
 
-    if (!dateString) return null;
+    if (loading) {
+        return (
+            <>
+                <NewsTicker />
+                <NewspaperLoader />
+            </>
+        )
+    }
 
-    return (
-        <div className="min-h-screen">
-            {/* Hero Section */}
-            <section className="px-gutter py-12 md:py-20 text-center max-w-reading mx-auto border-b-4 border-double border-[var(--ink)] mb-12">
-                <div>
-                    {/* Dateline */}
-                    <div className="flex items-center justify-between border-t border-b border-[var(--ink)] py-2 mb-8">
-                        <p className="text-xs font-bold uppercase tracking-widest">
-                            Vol. CCIX, No. 42
-                        </p>
-                        <p className="text-xs font-serif italic text-[var(--ink)]">
-                            {dateString}
-                        </p>
-                        <p className="text-xs font-bold uppercase tracking-widest">
-                            $2.00
-                        </p>
-                    </div>
-
-                    <h1
-                        className="font-serif text-6xl md:text-8xl font-black mb-6 tracking-tight leading-none"
-                        style={{ color: 'var(--ink)' }}
-                    >
-                        THE DAILY BRIEF
-                    </h1>
-
-                    <p
-                        className="text-xl font-serif italic max-w-2xl mx-auto mb-10"
-                        style={{ color: 'var(--ink-light)' }}
-                    >
-                        &quot;All the News That&apos;s Fit to Print, Summarized by AI&quot;
-                    </p>
-
-                    {/* Mode Toggle */}
-                    <div className="inline-flex border border-[var(--ink)] mb-8">
-                        <button
-                            onClick={() => setSummaryMode('kid')}
-                            className="px-6 py-2 text-sm font-bold uppercase tracking-wider transition-all duration-200"
-                            style={{
-                                backgroundColor: summaryMode === 'kid' ? 'var(--ink)' : 'transparent',
-                                color: summaryMode === 'kid' ? 'var(--paper)' : 'var(--ink)',
-                            }}
-                        >
-                            🎈 Kid Mode
-                        </button>
-                        <button
-                            onClick={() => setSummaryMode('pro')}
-                            className="px-6 py-2 text-sm font-bold uppercase tracking-wider transition-all duration-200"
-                            style={{
-                                backgroundColor: summaryMode === 'pro' ? 'var(--ink)' : 'transparent',
-                                color: summaryMode === 'pro' ? 'var(--paper)' : 'var(--ink)',
-                            }}
-                        >
-                            🎯 Pro Mode
-                        </button>
-                    </div>
-
-                    {/* Login CTA for unauthenticated */}
-                    {!authLoading && !isAuthenticated && (
-                        <div className="mb-8">
-                            <Link href="/login" className="btn-primary inline-flex">
-                                <LogIn className="w-4 h-4" />
-                                Sign In to Personalize
-                            </Link>
-                        </div>
-                    )}
-                </div>
-            </section>
-
-            {/* Articles Section */}
-            <section className="px-gutter pb-12 max-w-[1400px] mx-auto">
-                <div className="flex items-center justify-between mb-8 pb-2 border-b border-[var(--ink)]">
-                    <h2 className="font-serif text-3xl font-bold uppercase tracking-wide">
-                        Top Stories
-                    </h2>
+    if (error) {
+        return (
+            <>
+                <NewsTicker />
+                <div className="flex-1 flex flex-col items-center justify-center py-20 text-center animate-fade-in-up px-4">
+                    <span className="material-symbols-outlined text-6xl text-alert mb-4">cloud_off</span>
+                    <h2 className="font-display font-bold text-2xl mb-2">Connection Issue</h2>
+                    <p className="font-mono text-sm text-ink/60 mb-6 max-w-md">{error}</p>
                     <button
-                        onClick={fetchArticles}
-                        className="text-xs font-bold uppercase underline hover:text-[var(--accent)]"
+                        onClick={() => fetchArticles()}
+                        className="px-6 py-3 bg-primary border-3 border-ink shadow-hard font-bold hover:shadow-hard-hover hover:-translate-y-1 transition-all flex items-center gap-2"
                     >
-                        Refresh Edition
+                        <span className="material-symbols-outlined text-lg">refresh</span>
+                        RETRY
                     </button>
                 </div>
+            </>
+        )
+    }
 
-                {loading ? (
-                    <NewspaperLoader />
-                ) : error ? (
-                    <div className="text-center py-20 border border-dashed border-[var(--ink-muted)] p-8">
-                        <p className="font-serif text-2xl mb-3" style={{ color: 'var(--ink)' }}>
-                            No Dispatches Yet
-                        </p>
-                        <p className="text-sm mb-8" style={{ color: 'var(--ink-muted)' }}>
-                            {error}
-                        </p>
-                        <button onClick={fetchArticles} className="btn-primary">
-                            Try Again
+    return (
+        <>
+            {/* Marquee Ticker */}
+            <NewsTicker />
+
+            {/* Header / Controls */}
+            <header className="px-8 py-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+                <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-3">
+                        <span className="bg-ink text-canvas px-2 py-1 text-xs font-bold font-mono">
+                            {formatDate(new Date().toISOString())}
+                        </span>
+                        <div className="h-px bg-ink w-12" />
+                    </div>
+                    <h1 className="font-display font-black text-5xl md:text-6xl tracking-tight leading-[0.9]">
+                        THE DAILY<br />
+                        <span style={{ WebkitTextStroke: '2px #121212', color: 'transparent' }}>BRIEF</span>
+                    </h1>
+                </div>
+
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={refreshArticles}
+                        disabled={refreshing}
+                        className="flex items-center gap-2 px-4 py-2 bg-white border-3 border-ink shadow-hard font-bold text-sm hover:bg-primary transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                        <span className={`material-symbols-outlined text-lg ${refreshing ? 'animate-spin' : ''}`}>refresh</span>
+                        {refreshing ? 'REFRESHING...' : 'REFRESH'}
+                    </button>
+                </div>
+            </header>
+
+            {/* Newspaper Grid Layout */}
+            <div className="flex-1 p-8 pt-2">
+                {articles.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-center animate-fade-in-up">
+                        <span className="material-symbols-outlined text-6xl text-ink/20 mb-4">newspaper</span>
+                        <h2 className="font-display font-bold text-2xl mb-2">No Articles Yet</h2>
+                        <p className="font-mono text-sm text-ink/60 mb-6">Hit REFRESH to fetch the latest news</p>
+                        <button onClick={refreshArticles} className="px-6 py-3 bg-primary border-3 border-ink shadow-hard font-bold hover:shadow-hard-hover hover:-translate-y-1 transition-all">
+                            FETCH NEWS
                         </button>
                     </div>
-                ) : articles.length === 0 ? (
-                    <div className="text-center py-20 border border-dashed border-[var(--ink-muted)] p-8">
-                        <p className="font-serif text-2xl mb-3" style={{ color: 'var(--ink)' }}>
-                            The Presses Are Warming Up
-                        </p>
-                        <p className="text-sm" style={{ color: 'var(--ink-muted)' }}>
-                            Check back soon for fresh intelligence.
-                        </p>
-                    </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-x-8 gap-y-12">
-                        {/* Lead Story */}
-                        {articles.length > 0 && (
-                            <div className="md:col-span-8 border-r border-[#e5e5e5] pr-6">
-                                <ArticleCard
-                                    {...articles[0]}
-                                    summary={getSummary(articles[0])}
-                                    index={0}
-                                    isAuthenticated={isAuthenticated}
-                                />
-                            </div>
-                        )}
-
-                        {/* Second Feature */}
-                        {articles.length > 1 && (
-                            <div className="md:col-span-4">
-                                <ArticleCard
-                                    {...articles[1]}
-                                    summary={getSummary(articles[1])}
-                                    index={1}
-                                    isAuthenticated={isAuthenticated}
-                                />
-                            </div>
-                        )}
-
-                        {/* Divider */}
-                        <div className="md:col-span-12 h-px bg-[var(--ink)] my-2 opacity-20" />
-
-                        {/* Remaining Articles */}
-                        {articles.slice(2).map((article, index) => (
-                            <div key={article.id} className="md:col-span-4 border-r border-[#e5e5e5] last:border-0 pr-4">
-                                <ArticleCard
-                                    {...article}
-                                    summary={getSummary(article)}
-                                    index={index + 2}
-                                    isAuthenticated={isAuthenticated}
-                                />
-                            </div>
-                        ))}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 auto-rows-[minmax(180px,auto)] grid-flow-dense pb-12 max-w-[1400px] mx-auto">
+                        {articles.map((article, i) => {
+                            const { className, size } = getGridClass(i)
+                            return (
+                                <div key={article.id} className={className}>
+                                    <ArticleCard article={article} index={i} size={size} />
+                                </div>
+                            )
+                        })}
                     </div>
                 )}
-            </section>
-
-            {/* Stats Footer */}
-            {articles.length > 0 && (
-                <section className="px-gutter py-16 max-w-editorial mx-auto border-t-2 border-[var(--ink)] mt-12">
-                    <div className="grid md:grid-cols-3 gap-8 text-center">
-                        <div>
-                            <p className="font-serif text-4xl font-black mb-1" style={{ color: 'var(--ink)' }}>
-                                {articles.length}
-                            </p>
-                            <p className="text-xs uppercase tracking-widest font-bold" style={{ color: 'var(--ink-muted)' }}>
-                                Articles Printed
-                            </p>
-                        </div>
-                        <div>
-                            <p className="font-serif text-4xl font-black mb-1" style={{ color: 'var(--ink)' }}>
-                                3
-                            </p>
-                            <p className="text-xs uppercase tracking-widest font-bold" style={{ color: 'var(--ink-muted)' }}>
-                                Verified Sources
-                            </p>
-                        </div>
-                        <div>
-                            <div className="flex items-center justify-center gap-2 mb-1">
-                                <Sparkles className="w-6 h-6" style={{ color: 'var(--accent)' }} />
-                            </div>
-                            <p className="text-xs uppercase tracking-widest font-bold" style={{ color: 'var(--ink-muted)' }}>
-                                Gemini Powered
-                            </p>
-                        </div>
-                    </div>
-                </section>
-            )}
-        </div>
+            </div>
+        </>
     )
 }

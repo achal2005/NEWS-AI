@@ -1,187 +1,231 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { Trophy, Medal, Crown, TrendingUp } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-
 interface LeaderboardEntry {
-    rank: number
     user_id: string
     display_name: string
     weekly_points: number
+    rank: number
+    articles_read: number
     quiz_accuracy: number | null
-    reading_time_minutes: number | null
-    articles_read: number | null
+    reading_time_minutes: number
 }
 
 export default function LeaderboardPage() {
-    const { user, token, isAuthenticated } = useAuth()
+    const { user, token } = useAuth()
     const [entries, setEntries] = useState<LeaderboardEntry[]>([])
-    const [userRank, setUserRank] = useState<number | null>(null)
     const [loading, setLoading] = useState(true)
+    const [userRank, setUserRank] = useState<LeaderboardEntry | null>(null)
 
     useEffect(() => {
-        fetchLeaderboard()
-    }, [isAuthenticated])
+        const fetchLeaderboard = async () => {
+            try {
+                const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+                if (token) headers.Authorization = `Bearer ${token}`
 
-    const fetchLeaderboard = async () => {
-        try {
-            const headers: Record<string, string> = {}
-            if (token) headers['Authorization'] = `Bearer ${token}`
-
-            const res = await fetch(`${apiUrl}/api/leaderboard`, {
-                headers,
-                cache: 'no-store',
-            })
-            if (res.ok) {
-                const data = await res.json()
-                setEntries(data.entries || [])
-                setUserRank(data.user_rank ?? null)
-            } else {
-                setEntries([])
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/leaderboard`, {
+                    headers, cache: 'no-store',
+                })
+                if (res.ok) {
+                    const data = await res.json()
+                    setEntries(data.entries || [])
+                    if (data.user_entry) setUserRank(data.user_entry)
+                }
+            } catch (err) {
+                console.error('Failed to fetch leaderboard:', err)
+            } finally {
+                setLoading(false)
             }
-        } catch {
-            setEntries([])
-        } finally {
-            setLoading(false)
         }
-    }
+        fetchLeaderboard()
+    }, [token])
 
-    const getRankIcon = (rank: number) => {
-        if (rank === 1) return <Crown className="w-5 h-5" style={{ color: '#D4AF37' }} />
-        if (rank === 2) return <Medal className="w-5 h-5" style={{ color: '#AAA9AD' }} />
-        if (rank === 3) return <Medal className="w-5 h-5" style={{ color: '#CD7F32' }} />
-        return <span className="text-sm font-bold" style={{ color: 'var(--ink-muted)' }}>{rank}</span>
+    if (loading) {
+        return (
+            <div className="flex-1 flex items-center justify-center py-20">
+                <div className="text-center">
+                    <span className="material-symbols-outlined text-6xl text-ink/20 animate-pulse">trophy</span>
+                    <p className="font-mono text-sm text-ink/60 mt-4">Loading roster...</p>
+                </div>
+            </div>
+        )
     }
-
-    const myEntry = entries.find(e => user && String(e.user_id) === String(user.id))
 
     return (
-        <div className="min-h-screen px-gutter py-12">
-            <div className="max-w-reading mx-auto">
-                {/* Header */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-10"
-                >
-                    <div className="flex items-center gap-3 mb-2">
-                        <Trophy className="w-6 h-6" style={{ color: 'var(--accent)' }} />
-                        <h1 className="font-serif text-headline" style={{ color: 'var(--ink)' }}>
-                            Leaderboard
-                        </h1>
+        <div className="flex-1 flex flex-col">
+            {/* Header Bar */}
+            <header className="h-20 border-b-3 border-ink flex items-center justify-between px-8 bg-white/50 sticky top-0 z-10">
+                <div className="flex items-center gap-4">
+                    <h2 className="text-2xl font-black uppercase tracking-tight font-sans">Weekly Top Readers</h2>
+                    <span className="bg-ink text-primary px-2 py-1 text-xs font-mono font-bold">
+                        SEASON 4 // WEEK 12
+                    </span>
+                </div>
+                {userRank && (
+                    <div className="flex items-center gap-2 border-2 border-ink rounded-full px-3 py-1 bg-white shadow-hard-sm">
+                        <span className="material-symbols-outlined text-sm">local_fire_department</span>
+                        <span className="font-mono text-sm font-bold">RANK: #{userRank.rank}</span>
                     </div>
-                    <p className="text-sm" style={{ color: 'var(--ink-muted)' }}>
-                        Weekly rankings — top readers earn bragging rights
-                    </p>
-                </motion.div>
+                )}
+            </header>
 
-                <div className="editorial-rule-thick" />
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-8">
+                <div className="max-w-6xl mx-auto h-full flex flex-col lg:flex-row gap-8">
 
-                {/* My Rank Card */}
-                {myEntry && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 15 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="editorial-card p-5 mb-8"
-                        style={{ borderColor: 'var(--accent)' }}
-                    >
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div
-                                    className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm"
-                                    style={{ backgroundColor: 'var(--accent)', color: 'var(--paper)' }}
-                                >
-                                    #{myEntry.rank}
-                                </div>
-                                <div>
-                                    <p className="font-semibold text-sm" style={{ color: 'var(--ink)' }}>
-                                        Your Rank
-                                    </p>
-                                    <p className="text-xs" style={{ color: 'var(--ink-muted)' }}>
-                                        {myEntry.weekly_points} pts this week · {myEntry.articles_read ?? 0} articles
-                                    </p>
-                                </div>
+                    {/* Left Column: The List (Clipboard Style) */}
+                    <div className="flex-1 flex flex-col">
+                        {/* Clipboard Top Clip */}
+                        <div className="mx-auto w-32 h-4 bg-ink rounded-t-lg relative z-10 -mb-2" />
+
+                        <div className="bg-white border-3 border-ink shadow-hard relative flex flex-col">
+                            {/* Table Header */}
+                            <div className="flex items-center border-b-3 border-ink bg-paper-accent px-6 py-4">
+                                <div className="w-16 font-mono font-bold text-xs text-ink/60">RANK</div>
+                                <div className="flex-1 font-mono font-bold text-xs text-ink/60">READER</div>
+                                <div className="w-24 text-right font-mono font-bold text-xs text-ink/60">SCORE</div>
+                                <div className="w-24 text-right font-mono font-bold text-xs text-ink/60 hidden sm:block">ARTICLES</div>
                             </div>
-                            <TrendingUp className="w-5 h-5" style={{ color: 'var(--accent)' }} />
+
+                            {/* List Items */}
+                            <div className="flex flex-col">
+                                {entries.length === 0 ? (
+                                    <div className="p-8 text-center">
+                                        <span className="material-symbols-outlined text-4xl text-ink/20">groups</span>
+                                        <p className="font-mono text-sm text-ink/60 mt-2">No readers on the roster yet.</p>
+                                    </div>
+                                ) : (
+                                    entries.map((entry) => {
+                                        const isCurrentUser = user && entry.user_id === user.id
+                                        const isTop = entry.rank === 1
+
+                                        return (
+                                            <div
+                                                key={entry.user_id}
+                                                className={`flex items-center px-6 py-4 border-b border-ink/10 transition-colors relative ${isCurrentUser
+                                                    ? 'py-5 border-y-3 border-ink bg-primary shadow-inner-hard'
+                                                    : isTop
+                                                        ? 'py-5 border-b-3 border-ink bg-white'
+                                                        : entry.rank % 2 === 0
+                                                            ? 'bg-paper-accent/50 hover:bg-white'
+                                                            : 'bg-white hover:bg-paper-accent'
+                                                    }`}
+                                            >
+                                                {isTop && <div className="absolute left-0 top-0 bottom-0 w-2 bg-alert" />}
+
+                                                <div className="w-16 flex items-center">
+                                                    {isTop ? (
+                                                        <div className="w-8 h-8 bg-alert text-white rounded-full flex items-center justify-center border-2 border-ink shadow-hard-sm rotate-[-6deg]">
+                                                            <span className="font-black text-sm">1</span>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="font-mono font-bold text-lg text-ink/50">
+                                                            {String(entry.rank).padStart(2, '0')}
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex-1 flex items-center gap-3">
+                                                    <div className={`w-10 h-10 ${isTop ? 'border-2' : 'border'} border-ink rounded-full flex items-center justify-center bg-cool text-white font-bold`}>
+                                                        {entry.display_name?.charAt(0)?.toUpperCase() || 'U'}
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <span className={`font-bold ${isTop ? 'text-lg' : ''} leading-none`}>
+                                                            {isCurrentUser ? 'YOU' : entry.display_name}
+                                                        </span>
+                                                        {isTop && (
+                                                            <span className="text-xs font-mono bg-alert/10 text-alert px-1 rounded w-fit mt-1">
+                                                                CHAMPION
+                                                            </span>
+                                                        )}
+                                                        {isCurrentUser && !isTop && (
+                                                            <span className="text-xs font-mono font-bold opacity-70">
+                                                                Top {Math.round((entry.rank / entries.length) * 100)}% Global
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {isTop && (
+                                                        <span className="material-symbols-outlined text-alert ml-2 animate-bounce">crown</span>
+                                                    )}
+                                                </div>
+
+                                                <div className={`w-24 text-right font-mono font-bold ${isTop || isCurrentUser ? 'text-xl' : ''}`}>
+                                                    {entry.weekly_points?.toLocaleString() || '0'}
+                                                </div>
+                                                <div className="w-24 text-right font-mono text-sm hidden sm:block">
+                                                    {entry.articles_read || 0}
+                                                </div>
+                                            </div>
+                                        )
+                                    })
+                                )}
+                            </div>
                         </div>
-                    </motion.div>
-                )}
+                    </div>
 
-                {/* Leaderboard List */}
-                {loading ? (
-                    <div className="space-y-3">
-                        {[1, 2, 3, 4, 5].map((i) => (
-                            <div key={i} className="editorial-card p-5 animate-pulse">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full" style={{ backgroundColor: 'var(--paper-sunken)' }} />
-                                    <div className="flex-1 space-y-2">
-                                        <div className="h-4 rounded w-1/3" style={{ backgroundColor: 'var(--paper-sunken)' }} />
-                                        <div className="h-3 rounded w-1/4" style={{ backgroundColor: 'var(--paper-sunken)' }} />
+                    {/* Right Column: Stats Module */}
+                    {userRank && (
+                        <div className="w-full lg:w-80 flex flex-col gap-6">
+                            <div className="bg-ink p-1 shadow-hard">
+                                <div className="bg-paper-accent border-2 border-ink h-full p-4 flex flex-col gap-4">
+                                    <div className="flex justify-between items-center border-b-2 border-ink/10 pb-2">
+                                        <h3 className="font-black text-lg font-sans">YOUR STATS</h3>
+                                        <div className="flex gap-1">
+                                            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                                            <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                                            <div className="w-2 h-2 rounded-full bg-green-500" />
+                                        </div>
+                                    </div>
+
+                                    {/* Stat Cards */}
+                                    <div className="grid grid-cols-1 gap-4">
+                                        {/* Points */}
+                                        <div className="bg-white border-2 border-ink p-3 shadow-hard-sm">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="font-mono text-xs font-bold text-ink/60">TOTAL POINTS</span>
+                                                <span className="material-symbols-outlined text-alert text-lg">stars</span>
+                                            </div>
+                                            <div className="bg-ink/5 p-2 border border-ink/10">
+                                                <span className="lcd-text text-3xl font-black text-ink block text-center tracking-widest">
+                                                    {userRank.weekly_points?.toLocaleString() || '0'}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Articles Read */}
+                                        <div className="bg-white border-2 border-ink p-3 shadow-hard-sm">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="font-mono text-xs font-bold text-ink/60">ARTICLES READ</span>
+                                                <span className="material-symbols-outlined text-primary-dark text-lg">menu_book</span>
+                                            </div>
+                                            <div className="bg-ink/5 p-2 border border-ink/10">
+                                                <span className="lcd-text text-3xl font-black text-ink block text-center">
+                                                    {userRank.articles_read || 0}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Quiz Accuracy */}
+                                        <div className="bg-white border-2 border-ink p-3 shadow-hard-sm">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="font-mono text-xs font-bold text-ink/60">QUIZ WIN %</span>
+                                                <span className="material-symbols-outlined text-cool text-lg">verified</span>
+                                            </div>
+                                            <div className="bg-ink/90 p-2 border border-ink relative overflow-hidden">
+                                                <div className="absolute inset-0 bg-primary opacity-20 animate-pulse" />
+                                                <span className="lcd-text text-3xl font-black text-primary block text-center tracking-widest relative z-10">
+                                                    {userRank.quiz_accuracy != null ? `${Math.round(userRank.quiz_accuracy)}%` : 'N/A'}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        ))}
-                    </div>
-                ) : entries.length === 0 ? (
-                    <div className="editorial-card p-12 text-center">
-                        <p className="font-serif text-xl mb-2" style={{ color: 'var(--ink)' }}>
-                            No Rankings Yet
-                        </p>
-                        <p className="text-sm" style={{ color: 'var(--ink-muted)' }}>
-                            Start reading articles and taking quizzes to appear here.
-                        </p>
-                    </div>
-                ) : (
-                    <div className="space-y-2">
-                        {entries.map((entry, i) => {
-                            const isMe = user && String(entry.user_id) === String(user.id)
-                            return (
-                                <motion.div
-                                    key={entry.user_id}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: i * 0.05 }}
-                                    className={`editorial-card p-4 flex items-center gap-4 transition-all ${isMe ? '!border-[var(--accent)]' : ''}`}
-                                >
-                                    {/* Rank */}
-                                    <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
-                                        {getRankIcon(entry.rank)}
-                                    </div>
-
-                                    {/* User Info */}
-                                    <div className="flex-1 min-w-0">
-                                        <p
-                                            className="font-semibold text-sm truncate"
-                                            style={{ color: isMe ? 'var(--accent)' : 'var(--ink)' }}
-                                        >
-                                            {entry.display_name}
-                                            {isMe && <span className="text-xs ml-1.5 opacity-60">(you)</span>}
-                                        </p>
-                                        <p className="text-xs" style={{ color: 'var(--ink-muted)' }}>
-                                            {entry.articles_read ?? 0} articles
-                                            {entry.quiz_accuracy != null && ` · ${entry.quiz_accuracy}% quiz accuracy`}
-                                        </p>
-                                    </div>
-
-                                    {/* Points */}
-                                    <div className="text-right">
-                                        <p className="font-bold text-sm font-serif" style={{ color: 'var(--ink)' }}>
-                                            {entry.weekly_points.toLocaleString()}
-                                        </p>
-                                        <p className="text-[0.65rem] uppercase tracking-wider" style={{ color: 'var(--ink-muted)' }}>
-                                            pts
-                                        </p>
-                                    </div>
-                                </motion.div>
-                            )
-                        })}
-                    </div>
-                )}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     )

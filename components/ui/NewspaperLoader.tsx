@@ -1,119 +1,112 @@
 'use client'
 
-import { motion } from 'framer-motion'
+// Newspaper-style skeleton loader matching the article grid layout
+const SKELETON_PATTERN = [
+    'col-span-1 md:col-span-2 row-span-2',   // Featured
+    'col-span-1 row-span-1',                  // Normal
+    'col-span-1 row-span-2',                  // Tall
+    'col-span-1 md:col-span-2 row-span-1',    // Wide
+    'col-span-1 row-span-1',                  // Normal
+    'col-span-1 row-span-1',                  // Normal
+    'col-span-1 row-span-2',                  // Tall
+    'col-span-1 row-span-1',                  // Normal
+]
 
-/**
- * Folding Newspaper Loader
- * 
- * A 3D animated newspaper that unfolds page-by-page with a typewriter text effect.
- * Uses CSS custom properties so it automatically adapts to Paper/Dark/Sepia themes.
- */
-export function NewspaperLoader() {
-    const pageVariants = {
-        folded: (i: number) => ({
-            rotateX: -90,
-            opacity: 0,
-            transition: { delay: i * 0.4, duration: 0.6, ease: [0, 0, 0.2, 1] as const },
-        }),
-        unfolded: (i: number) => ({
-            rotateX: 0,
-            opacity: 1,
-            transition: { delay: i * 0.4, duration: 0.6, ease: [0, 0, 0.2, 1] as const },
-        }),
-    }
+function SkeletonCard({ spanClass, index }: { spanClass: string; index: number }) {
+    const isBig = spanClass.includes('col-span-2') || spanClass.includes('row-span-2')
 
     return (
-        <div className="flex flex-col items-center justify-center py-24">
-            {/* 3D Perspective Container */}
-            <div style={{ perspective: '800px' }} className="mb-8">
-                <div className="flex flex-col items-center gap-1" style={{ transformStyle: 'preserve-3d' }}>
-                    {[0, 1, 2].map(i => (
-                        <motion.div
-                            key={i}
-                            custom={i}
-                            initial="folded"
-                            animate="unfolded"
-                            variants={pageVariants}
-                            style={{
-                                transformOrigin: 'top center',
-                                backfaceVisibility: 'hidden',
-                            }}
-                        >
-                            <div
-                                className="relative overflow-hidden"
-                                style={{
-                                    width: `${180 - i * 12}px`,
-                                    height: `${60 - i * 4}px`,
-                                    backgroundColor: 'var(--paper-raised)',
-                                    border: '1px solid var(--border)',
-                                    borderRadius: '2px',
-                                    boxShadow: `0 ${2 + i}px ${8 + i * 4}px rgba(0,0,0,0.08)`,
-                                }}
-                            >
-                                {/* Fake text lines */}
-                                <div className="p-2.5 space-y-1.5">
-                                    {i === 0 && (
-                                        <>
-                                            <div className="h-2.5 rounded-sm" style={{ backgroundColor: 'var(--ink)', width: '75%' }} />
-                                            <div className="flex gap-1.5">
-                                                <div className="h-1.5 rounded-sm flex-1" style={{ backgroundColor: 'var(--border-strong)' }} />
-                                                <div className="h-1.5 rounded-sm flex-1" style={{ backgroundColor: 'var(--border-strong)' }} />
-                                            </div>
-                                            <div className="h-1.5 rounded-sm" style={{ backgroundColor: 'var(--border)', width: '90%' }} />
-                                        </>
-                                    )}
-                                    {i === 1 && (
-                                        <>
-                                            <div className="flex gap-1.5">
-                                                <div className="h-1.5 rounded-sm flex-1" style={{ backgroundColor: 'var(--border-strong)' }} />
-                                                <div className="h-1.5 rounded-sm" style={{ backgroundColor: 'var(--border-strong)', width: '40%' }} />
-                                            </div>
-                                            <div className="h-1.5 rounded-sm" style={{ backgroundColor: 'var(--border)', width: '80%' }} />
-                                            <div className="h-1.5 rounded-sm" style={{ backgroundColor: 'var(--border)', width: '60%' }} />
-                                        </>
-                                    )}
-                                    {i === 2 && (
-                                        <>
-                                            <div className="h-1.5 rounded-sm" style={{ backgroundColor: 'var(--border-strong)', width: '65%' }} />
-                                            <div className="h-1.5 rounded-sm" style={{ backgroundColor: 'var(--border)', width: '85%' }} />
-                                        </>
-                                    )}
-                                </div>
+        <div
+            className={`bg-white border-3 border-ink shadow-hard flex flex-col overflow-hidden ${spanClass}`}
+            style={{ animationDelay: `${index * 80}ms` }}
+        >
+            {/* Image placeholder for bigger cards */}
+            {isBig && (
+                <div className="h-[160px] bg-paper-grey border-b-3 border-ink relative overflow-hidden">
+                    <div className="absolute inset-0 skeleton-shimmer" />
+                </div>
+            )}
+
+            <div className="p-5 flex-1 flex flex-col justify-between gap-3">
+                <div className="space-y-3">
+                    {/* Category tag */}
+                    <div className="flex gap-2">
+                        <div className="h-5 w-16 bg-ink relative overflow-hidden">
+                            <div className="absolute inset-0 skeleton-shimmer" />
+                        </div>
+                        <div className="h-5 w-20 border-2 border-ink/20 relative overflow-hidden">
+                            <div className="absolute inset-0 skeleton-shimmer" />
+                        </div>
+                    </div>
+
+                    {/* Title lines */}
+                    <div className="space-y-2">
+                        <div className="h-6 bg-paper-grey w-full relative overflow-hidden">
+                            <div className="absolute inset-0 skeleton-shimmer" />
+                        </div>
+                        <div className="h-6 bg-paper-grey w-4/5 relative overflow-hidden">
+                            <div className="absolute inset-0 skeleton-shimmer" />
+                        </div>
+                        {isBig && (
+                            <div className="h-6 bg-paper-grey w-3/5 relative overflow-hidden">
+                                <div className="absolute inset-0 skeleton-shimmer" />
                             </div>
-                        </motion.div>
-                    ))}
+                        )}
+                    </div>
+
+                    {/* Content placeholder for big cards */}
+                    {isBig && (
+                        <div className="space-y-2 mt-2">
+                            <div className="h-4 bg-paper-accent w-full relative overflow-hidden">
+                                <div className="absolute inset-0 skeleton-shimmer" />
+                            </div>
+                            <div className="h-4 bg-paper-accent w-2/3 relative overflow-hidden">
+                                <div className="absolute inset-0 skeleton-shimmer" />
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Date + arrow */}
+                <div className="flex justify-between items-center mt-auto">
+                    <div className="h-3 bg-paper-accent w-20 relative overflow-hidden">
+                        <div className="absolute inset-0 skeleton-shimmer" />
+                    </div>
+                    <div className="w-8 h-8 rounded-full border-2 border-ink/20 relative overflow-hidden">
+                        <div className="absolute inset-0 skeleton-shimmer" />
+                    </div>
                 </div>
             </div>
-
-            {/* Typewriter Text */}
-            <TypewriterLoader />
         </div>
     )
 }
 
-function TypewriterLoader() {
-    const text = "Printing today's edition..."
-
+export function NewspaperLoader() {
     return (
-        <div className="text-center">
-            <p className="font-serif text-lg italic" style={{ color: 'var(--ink-muted)' }}>
-                {text.split('').map((char, i) => (
-                    <motion.span
-                        key={i}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 1.2 + i * 0.04, duration: 0.1 }}
-                    >
-                        {char}
-                    </motion.span>
+        <div className="flex-1 p-8 pt-2">
+            {/* Header skeleton */}
+            <header className="py-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-2">
+                <div className="flex flex-col gap-3">
+                    <div className="h-6 w-48 bg-ink relative overflow-hidden">
+                        <div className="absolute inset-0 skeleton-shimmer" />
+                    </div>
+                    <div className="space-y-2">
+                        <div className="h-12 w-64 bg-paper-grey relative overflow-hidden">
+                            <div className="absolute inset-0 skeleton-shimmer" />
+                        </div>
+                    </div>
+                </div>
+                <div className="h-10 w-32 bg-white border-3 border-ink shadow-hard relative overflow-hidden">
+                    <div className="absolute inset-0 skeleton-shimmer" />
+                </div>
+            </header>
+
+            {/* Grid skeleton */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 auto-rows-[minmax(180px,auto)] grid-flow-dense pb-12 max-w-[1400px] mx-auto">
+                {SKELETON_PATTERN.map((spanClass, i) => (
+                    <SkeletonCard key={i} spanClass={spanClass} index={i} />
                 ))}
-                <motion.span
-                    className="inline-block w-0.5 h-5 ml-0.5 align-text-bottom"
-                    style={{ backgroundColor: 'var(--accent)' }}
-                    animate={{ opacity: [1, 0, 1] }}
-                    transition={{ duration: 1, repeat: Infinity }}
-                />
-            </p>
+            </div>
         </div>
     )
 }

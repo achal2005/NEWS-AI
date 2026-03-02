@@ -1,32 +1,39 @@
 import type { Metadata } from 'next'
-import { Playfair_Display, Inter } from 'next/font/google'
+import { Space_Grotesk, Space_Mono, Noto_Serif_Display } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/lib/auth'
 import { ThemeProvider } from '@/components/ui/ThemeProvider'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { LayoutShell } from '@/components/ui/LayoutShell'
 
-const playfair = Playfair_Display({
+const spaceGrotesk = Space_Grotesk({
     subsets: ['latin'],
-    variable: '--font-playfair',
+    variable: '--font-space-grotesk',
     display: 'swap',
-    weight: ['400', '500', '600', '700', '800', '900'],
+    weight: ['300', '400', '500', '600', '700'],
 })
 
-const inter = Inter({
+const spaceMono = Space_Mono({
     subsets: ['latin'],
-    variable: '--font-inter',
+    variable: '--font-space-mono',
     display: 'swap',
-    weight: ['300', '400', '500', '600', '700', '800'],
+    weight: ['400', '700'],
+})
+
+const notoSerifDisplay = Noto_Serif_Display({
+    subsets: ['latin'],
+    variable: '--font-noto-serif',
+    display: 'swap',
+    weight: ['400', '500', '700', '900'],
 })
 
 export const metadata: Metadata = {
-    title: 'The Daily Brief | AI-Curated Intelligence',
-    description: 'A premium AI-powered news platform delivering curated intelligence with personalized summaries, fact-checking, and editorial rigor.',
-    keywords: 'AI, news, editorial, intelligence, summaries, curated, fact-check',
+    title: 'THE DAILY BRIEF',
+    description: 'AI-powered news ecosystem with a neo-zine brutalist interface. Curated intelligence, gamified reading, and personalized summaries.',
+    keywords: 'AI, news, zine, brutalist, intelligence, summaries, curated',
     openGraph: {
-        title: 'The Daily Brief | AI-Curated Intelligence',
-        description: 'Premium news summaries powered by artificial intelligence',
+        title: 'THE DAILY BRIEF',
+        description: 'AI-powered news with a neo-zine brutalist interface',
         type: 'website',
     },
 }
@@ -37,8 +44,13 @@ export default function RootLayout({
     children: React.ReactNode
 }) {
     return (
-        <html lang="en" className={`${playfair.variable} ${inter.variable}`} data-theme="paper">
-            <body className="min-h-screen antialiased font-sans">
+        <html lang="en" className={`${spaceGrotesk.variable} ${spaceMono.variable} ${notoSerifDisplay.variable}`}>
+            <head>
+                <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+            </head>
+            <body suppressHydrationWarning className="min-h-screen font-mono bg-canvas text-ink antialiased selection:bg-highlight selection:text-ink">
+                {/* Noise texture overlay */}
+                <div className="noise-overlay" />
                 <AuthProvider>
                     <ThemeProvider>
                         <LayoutShell>
@@ -52,4 +64,3 @@ export default function RootLayout({
         </html>
     )
 }
-

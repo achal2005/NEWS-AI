@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { Zap } from 'lucide-react'
+import { useState, useEffect } from 'react'
 
 interface TickerHeadline {
     id: string
@@ -22,7 +21,6 @@ export function NewsTicker({ headlines: propHeadlines }: NewsTickerProps) {
             return
         }
 
-        // Fetch latest headlines
         const fetchHeadlines = async () => {
             try {
                 const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/news?page_size=10`, {
@@ -45,50 +43,34 @@ export function NewsTicker({ headlines: propHeadlines }: NewsTickerProps) {
         fetchHeadlines()
     }, [propHeadlines])
 
-    if (headlines.length === 0) {
-        return (
-            <div className="ticker-bar py-2.5 px-4">
-                <div className="flex items-center gap-2 justify-center">
-                    <Zap className="w-3.5 h-3.5" />
-                    <span className="text-xs font-semibold uppercase tracking-wider">Live Wire</span>
-                    <span className="text-xs opacity-60">— Loading headlines...</span>
-                </div>
-            </div>
-        )
-    }
+    const fallbackItems = [
+        '/// SYSTEM: AI NEWS ENGINE ACTIVE',
+        '/// STATUS: ALL FEEDS OPERATIONAL',
+        '/// TIP: DEEP MODE REVEALS MORE DETAILS',
+    ]
 
-    // Double the content for seamless loop
-    const tickerItems = [...headlines, ...headlines]
+    const tickerItems = headlines.length > 0
+        ? [...headlines, ...headlines]
+        : []
 
     return (
-        <div className="ticker-bar py-2.5 relative">
-            {/* LIVE badge */}
-            <div
-                className="absolute left-0 top-0 bottom-0 z-10 flex items-center gap-1.5 px-4 font-semibold text-xs uppercase tracking-wider"
-                style={{
-                    background: 'linear-gradient(90deg, var(--ink) 80%, transparent)',
-                    color: 'var(--paper)',
-                }}
-            >
-                <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: 'var(--danger)' }} />
-                    <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: 'var(--danger)' }} />
-                </span>
-                <Zap className="w-3 h-3" />
-                Live
-            </div>
-
-            {/* Scrolling content */}
-            <div className="ticker-content pl-24">
-                {tickerItems.map((headline, i) => (
-                    <span key={`${headline.id}-${i}`} className="inline-flex items-center gap-3 mx-6 text-xs">
-                        <span className="opacity-40 font-semibold uppercase tracking-wider">
-                            {headline.category}
+        <div className="h-10 border-b-3 border-ink bg-ink text-primary flex items-center overflow-hidden whitespace-nowrap relative z-10">
+            <div className="animate-marquee font-mono text-sm font-bold flex gap-12 items-center min-w-max">
+                {tickerItems.length > 0 ? (
+                    tickerItems.map((headline, i) => (
+                        <span key={`${headline.id}-${i}`} className="inline-flex items-center gap-2">
+                            <span className="text-primary/50">///</span>
+                            <span className="uppercase text-primary/70 text-xs">{headline.category}:</span>
+                            <span>{headline.title}</span>
                         </span>
-                        <span className="font-medium">{headline.title}</span>
-                        <span className="opacity-20">◆</span>
-                    </span>
-                ))}
+                    ))
+                ) : (
+                    <>
+                        {[...fallbackItems, ...fallbackItems].map((item, i) => (
+                            <span key={i}>{item}</span>
+                        ))}
+                    </>
+                )}
             </div>
         </div>
     )

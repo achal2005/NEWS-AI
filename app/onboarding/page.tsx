@@ -2,296 +2,158 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowRight, ArrowLeft, Check, Sparkles } from 'lucide-react'
 import { useAuth } from '@/lib/auth'
 
 const CATEGORIES = [
-    { id: 'technology', name: 'Technology', icon: '💻' },
-    { id: 'science', name: 'Science', icon: '🔬' },
-    { id: 'business', name: 'Business', icon: '💼' },
-    { id: 'health', name: 'Health', icon: '🏥' },
-    { id: 'sports', name: 'Sports', icon: '⚽' },
-    { id: 'entertainment', name: 'Entertainment', icon: '🎬' },
+    { id: 'technology', label: 'TECH', icon: 'computer' },
+    { id: 'science', label: 'SCIENCE', icon: 'biotech' },
+    { id: 'business', label: 'BUSINESS', icon: 'trending_up' },
+    { id: 'health', label: 'HEALTH', icon: 'favorite' },
+    { id: 'sports', label: 'SPORTS', icon: 'sports_soccer' },
+    { id: 'entertainment', label: 'CULTURE', icon: 'palette' },
+    { id: 'politics', label: 'POLITICS', icon: 'gavel' },
+    { id: 'general', label: 'GENERAL', icon: 'public' },
+]
+
+const ROLES = [
+    { id: 'casual', label: 'CASUAL READER', desc: 'Quick headlines, easy bites' },
+    { id: 'professional', label: 'PRO ANALYST', desc: 'Deep dives, expert language' },
+    { id: 'student', label: 'STUDENT', desc: 'Learning-focused, key terms highlighted' },
 ]
 
 export default function OnboardingPage() {
+    const { token } = useAuth()
     const router = useRouter()
-    const { token, refreshUser } = useAuth()
     const [step, setStep] = useState(0)
-    const [role, setRole] = useState<'kid' | 'pro' | null>(null)
+    const [selectedRole, setSelectedRole] = useState('')
     const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-    const [displayName, setDisplayName] = useState('')
-    const [submitting, setSubmitting] = useState(false)
-    const [error, setError] = useState<string | null>(null)
+    const [saving, setSaving] = useState(false)
+
+    const totalSteps = 2
+    const progress = ((step + 1) / totalSteps) * 100
 
     const toggleCategory = (id: string) => {
         setSelectedCategories(prev =>
-            prev.includes(id)
-                ? prev.filter(c => c !== id)
-                : [...prev, id]
+            prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
         )
     }
 
-    const handleSubmit = async () => {
-        if (!role || selectedCategories.length === 0 || !displayName.trim()) return
-        setSubmitting(true)
-        setError(null)
-
+    const handleFinish = async () => {
+        if (!token) { router.push('/dashboard'); return }
+        setSaving(true)
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-            const res = await fetch(`${apiUrl}/api/auth/complete-profile`, {
-                method: 'POST',
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/profile`, {
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                    Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
-                    display_name: displayName.trim(),
                     preferred_categories: selectedCategories,
-                    summary_mode: role,
+                    summary_mode: selectedRole === 'casual' ? 'kid' : 'pro',
+                    reading_level: selectedRole === 'professional' ? 8 : 5,
                 }),
             })
-
-            if (!res.ok) {
-                throw new Error('Failed to save profile')
-            }
-
-            await refreshUser()
-            router.push('/dashboard')
-        } catch (e) {
-            setError('Something went wrong. Please try again.')
+        } catch (err) {
+            console.error('Onboarding save failed:', err)
         } finally {
-            setSubmitting(false)
+            setSaving(false)
+            router.push('/dashboard')
         }
     }
 
-    const canProceed = () => {
-        if (step === 0) return role !== null
-        if (step === 1) return selectedCategories.length > 0
-        if (step === 2) return displayName.trim().length >= 2
-        return false
-    }
-
     return (
-        <div className="min-h-screen flex items-center justify-center px-6 py-12" style={{ backgroundColor: 'var(--paper)' }}>
-            <div className="w-full max-w-xl">
-                {/* Progress */}
-                <div className="flex gap-2 mb-12 justify-center">
-                    {[0, 1, 2].map(i => (
-                        <div
-                            key={i}
-                            className="h-1.5 rounded-full transition-all duration-500"
-                            style={{
-                                width: i === step ? '3rem' : '1.5rem',
-                                backgroundColor: i <= step ? 'var(--ink)' : 'var(--border)',
-                            }}
-                        />
-                    ))}
+        <div className="min-h-screen bg-canvas flex flex-col items-center justify-center relative px-4">
+            {/* Grid bg */}
+            <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#121212 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+
+            <div className="relative z-10 w-full max-w-2xl">
+                {/* Progress Bar */}
+                <div className="mb-8">
+                    <div className="flex justify-between items-center mb-2">
+                        <span className="font-mono text-xs font-bold text-ink/60">
+                            SETUP // STEP {step + 1} OF {totalSteps}
+                        </span>
+                        <span className="font-mono text-xs font-bold">{Math.round(progress)}%</span>
+                    </div>
+                    <div className="h-3 border-3 border-ink bg-white">
+                        <div className="h-full bg-primary transition-all duration-500" style={{ width: `${progress}%` }} />
+                    </div>
                 </div>
 
-                <AnimatePresence mode="wait">
-                    {/* ── Step 0: Choose Role ──────────────────── */}
+                {/* Shadow layer */}
+                <div className="absolute inset-0 top-16 translate-x-3 translate-y-3 bg-ink border-3 border-ink" />
+
+                {/* Main Card */}
+                <div className="relative bg-white border-3 border-ink shadow-hard overflow-hidden">
                     {step === 0 && (
-                        <motion.div
-                            key="role"
-                            initial={{ opacity: 0, x: 40 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -40 }}
-                            transition={{ duration: 0.3 }}
-                        >
-                            <h2 className="font-serif text-3xl font-bold text-center mb-3" style={{ color: 'var(--ink)' }}>
-                                How do you like your news?
-                            </h2>
-                            <p className="text-sm text-center mb-10" style={{ color: 'var(--ink-muted)' }}>
-                                Choose your reading mode — you can always change this later
-                            </p>
+                        <div className="p-8">
+                            <h2 className="font-display font-black text-3xl mb-2">Select Your Role</h2>
+                            <p className="font-mono text-sm text-ink/60 mb-8">How do you consume news?</p>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <button
-                                    onClick={() => setRole('kid')}
-                                    className="editorial-card p-8 text-center transition-all duration-300"
-                                    style={{
-                                        borderColor: role === 'kid' ? 'var(--accent)' : 'var(--border)',
-                                        borderWidth: role === 'kid' ? '2px' : '1px',
-                                        transform: role === 'kid' ? 'scale(1.03)' : 'scale(1)',
-                                    }}
-                                >
-                                    <div className="text-6xl mb-4">🎈</div>
-                                    <h3 className="font-serif text-xl font-bold mb-2" style={{ color: 'var(--ink)' }}>
-                                        Kid Mode
-                                    </h3>
-                                    <p className="text-xs" style={{ color: 'var(--ink-muted)' }}>
-                                        Fun, simple, emoji-filled summaries
-                                    </p>
-                                </button>
-
-                                <button
-                                    onClick={() => setRole('pro')}
-                                    className="editorial-card p-8 text-center transition-all duration-300"
-                                    style={{
-                                        borderColor: role === 'pro' ? 'var(--accent)' : 'var(--border)',
-                                        borderWidth: role === 'pro' ? '2px' : '1px',
-                                        transform: role === 'pro' ? 'scale(1.03)' : 'scale(1)',
-                                    }}
-                                >
-                                    <div className="text-6xl mb-4">🎯</div>
-                                    <h3 className="font-serif text-xl font-bold mb-2" style={{ color: 'var(--ink)' }}>
-                                        Pro Mode
-                                    </h3>
-                                    <p className="text-xs" style={{ color: 'var(--ink-muted)' }}>
-                                        Executive-style analysis & data
-                                    </p>
-                                </button>
+                            <div className="space-y-4">
+                                {ROLES.map((role) => (
+                                    <button
+                                        key={role.id}
+                                        onClick={() => setSelectedRole(role.id)}
+                                        className={`w-full text-left p-5 border-3 border-ink transition-all ${selectedRole === role.id
+                                                ? 'bg-primary shadow-hard -translate-y-1'
+                                                : 'bg-canvas hover:bg-paper-accent shadow-hard-sm hover:shadow-hard'
+                                            }`}
+                                    >
+                                        <span className="font-bold text-xl font-sans block">{role.label}</span>
+                                        <span className="font-mono text-sm text-ink/70">{role.desc}</span>
+                                    </button>
+                                ))}
                             </div>
-                        </motion.div>
+
+                            <button
+                                onClick={() => setStep(1)}
+                                disabled={!selectedRole}
+                                className="w-full mt-8 py-4 bg-ink text-primary border-3 border-ink font-bold text-lg shadow-hard hover:bg-primary hover:text-ink transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                NEXT →
+                            </button>
+                        </div>
                     )}
 
-                    {/* ── Step 1: Pick Categories ─────────────── */}
                     {step === 1 && (
-                        <motion.div
-                            key="categories"
-                            initial={{ opacity: 0, x: 40 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -40 }}
-                            transition={{ duration: 0.3 }}
-                        >
-                            <h2 className="font-serif text-3xl font-bold text-center mb-3" style={{ color: 'var(--ink)' }}>
-                                What interests you?
-                            </h2>
-                            <p className="text-sm text-center mb-10" style={{ color: 'var(--ink-muted)' }}>
-                                Pick at least one topic to personalize your feed
-                            </p>
+                        <div className="p-8">
+                            <h2 className="font-display font-black text-3xl mb-2">Pick Your Channels</h2>
+                            <p className="font-mono text-sm text-ink/60 mb-8">Select at least 2 topics for your feed.</p>
 
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                {CATEGORIES.map(cat => {
-                                    const selected = selectedCategories.includes(cat.id)
-                                    return (
-                                        <button
-                                            key={cat.id}
-                                            onClick={() => toggleCategory(cat.id)}
-                                            className="editorial-card p-5 text-center transition-all duration-200 relative"
-                                            style={{
-                                                borderColor: selected ? 'var(--accent)' : 'var(--border)',
-                                                borderWidth: selected ? '2px' : '1px',
-                                            }}
-                                        >
-                                            {selected && (
-                                                <div
-                                                    className="absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center"
-                                                    style={{ backgroundColor: 'var(--accent)' }}
-                                                >
-                                                    <Check className="w-3 h-3" style={{ color: 'var(--paper)' }} />
-                                                </div>
-                                            )}
-                                            <div className="text-3xl mb-2">{cat.icon}</div>
-                                            <p className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>
-                                                {cat.name}
-                                            </p>
-                                        </button>
-                                    )
-                                })}
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {/* ── Step 2: Display Name & Confirm ──────── */}
-                    {step === 2 && (
-                        <motion.div
-                            key="confirm"
-                            initial={{ opacity: 0, x: 40 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -40 }}
-                            transition={{ duration: 0.3 }}
-                        >
-                            <h2 className="font-serif text-3xl font-bold text-center mb-3" style={{ color: 'var(--ink)' }}>
-                                Almost there!
-                            </h2>
-                            <p className="text-sm text-center mb-10" style={{ color: 'var(--ink-muted)' }}>
-                                Choose a display name for the leaderboard
-                            </p>
-
-                            <div className="editorial-card p-8 mb-6">
-                                <label className="block text-xs font-bold uppercase tracking-wider mb-3" style={{ color: 'var(--ink-muted)' }}>
-                                    Display Name
-                                </label>
-                                <input
-                                    type="text"
-                                    value={displayName}
-                                    onChange={e => setDisplayName(e.target.value)}
-                                    placeholder="Your name"
-                                    className="w-full p-3 rounded-sm text-sm border outline-none transition-colors"
-                                    style={{
-                                        backgroundColor: 'var(--paper-sunken)',
-                                        borderColor: 'var(--border)',
-                                        color: 'var(--ink)',
-                                    }}
-                                    maxLength={50}
-                                />
-
-                                <div className="mt-6 pt-6 border-t" style={{ borderColor: 'var(--border)' }}>
-                                    <div className="flex items-center justify-between text-sm mb-2">
-                                        <span style={{ color: 'var(--ink-muted)' }}>Mode</span>
-                                        <span className="font-semibold" style={{ color: 'var(--ink)' }}>
-                                            {role === 'kid' ? '🎈 Kid' : '🎯 Pro'}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between text-sm">
-                                        <span style={{ color: 'var(--ink-muted)' }}>Topics</span>
-                                        <span className="font-semibold" style={{ color: 'var(--ink)' }}>
-                                            {selectedCategories.length} selected
-                                        </span>
-                                    </div>
-                                </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                {CATEGORIES.map((cat) => (
+                                    <button
+                                        key={cat.id}
+                                        onClick={() => toggleCategory(cat.id)}
+                                        className={`flex flex-col items-center gap-2 p-4 border-3 border-ink transition-all ${selectedCategories.includes(cat.id)
+                                                ? 'bg-primary shadow-hard -translate-y-1'
+                                                : 'bg-canvas shadow-hard-sm hover:shadow-hard hover:bg-paper-accent'
+                                            }`}
+                                    >
+                                        <span className="material-symbols-outlined text-3xl">{cat.icon}</span>
+                                        <span className="font-bold text-xs">{cat.label}</span>
+                                    </button>
+                                ))}
                             </div>
 
-                            {error && (
-                                <p className="text-sm text-center mb-4" style={{ color: 'var(--danger)' }}>
-                                    {error}
-                                </p>
-                            )}
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                {/* Navigation Buttons */}
-                <div className="flex items-center justify-between mt-10">
-                    {step > 0 ? (
-                        <button
-                            onClick={() => setStep(s => s - 1)}
-                            className="btn-outline text-xs"
-                        >
-                            <ArrowLeft className="w-4 h-4" />
-                            Back
-                        </button>
-                    ) : (
-                        <div />
-                    )}
-
-                    {step < 2 ? (
-                        <button
-                            onClick={() => setStep(s => s + 1)}
-                            disabled={!canProceed()}
-                            className="btn-primary text-xs disabled:opacity-40"
-                        >
-                            Continue
-                            <ArrowRight className="w-4 h-4" />
-                        </button>
-                    ) : (
-                        <button
-                            onClick={handleSubmit}
-                            disabled={!canProceed() || submitting}
-                            className="btn-primary text-xs disabled:opacity-40"
-                        >
-                            {submitting ? (
-                                'Setting up...'
-                            ) : (
-                                <>
-                                    <Sparkles className="w-4 h-4" />
-                                    Start Reading
-                                </>
-                            )}
-                        </button>
+                            <div className="flex gap-4 mt-8">
+                                <button
+                                    onClick={() => setStep(0)}
+                                    className="flex-1 py-4 bg-white border-3 border-ink font-bold shadow-hard hover:bg-paper-accent transition-all"
+                                >
+                                    ← BACK
+                                </button>
+                                <button
+                                    onClick={handleFinish}
+                                    disabled={selectedCategories.length < 2 || saving}
+                                    className="flex-1 py-4 bg-ink text-primary border-3 border-ink font-bold text-lg shadow-hard hover:bg-primary hover:text-ink transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                    {saving ? 'SAVING...' : 'LAUNCH →'}
+                                </button>
+                            </div>
+                        </div>
                     )}
                 </div>
             </div>

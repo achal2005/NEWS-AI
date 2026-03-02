@@ -1,125 +1,32 @@
-'use client';
-
-import React from 'react';
+'use client'
 
 interface SummaryModeToggleProps {
-    mode: 'kid' | 'pro';
-    onModeChange: (mode: 'kid' | 'pro') => void;
-    disabled?: boolean;
-    className?: string;
+    mode: string
+    onModeChange: (mode: string) => void
 }
 
-export default function SummaryModeToggle({
-    mode,
-    onModeChange,
-    disabled = false,
-    className = ''
-}: SummaryModeToggleProps) {
-    const isKidMode = mode === 'kid';
-
+export default function SummaryModeToggle({ mode, onModeChange }: SummaryModeToggleProps) {
     return (
-        <div className={`flex items-center gap-3 ${className}`}>
-            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--ink-muted)' }}>
-                Mode
+        <div className="flex items-center gap-4 bg-white border-3 border-ink p-2 shadow-hard rounded-full">
+            <span className={`font-bold text-sm pl-2 ${mode === 'kid' ? 'text-ink' : 'text-gray-400'}`}>
+                SKIM
             </span>
+
+            {/* Custom Toggle */}
             <button
-                onClick={() => onModeChange(isKidMode ? 'pro' : 'kid')}
-                disabled={disabled}
-                className={`
-                    relative flex items-center h-10 px-1 py-1 rounded-sm
-                    transition-all duration-300 ease-out
-                    ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                `}
-                style={{
-                    border: '1px solid var(--border-strong)',
-                    backgroundColor: 'var(--paper-sunken)',
-                }}
-                aria-label={`Switch to ${isKidMode ? 'Pro' : 'Kid'} mode`}
+                onClick={() => onModeChange(mode === 'kid' ? 'pro' : 'kid')}
+                className="relative w-20 h-10 rounded-full border-3 border-ink bg-paper-grey flex items-center cursor-pointer transition-colors duration-200"
+                aria-label={`Switch to ${mode === 'kid' ? 'DEEP' : 'SKIM'} mode`}
             >
-                <span
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-sm font-medium transition-all duration-300"
-                    style={{
-                        backgroundColor: isKidMode ? 'var(--ink)' : 'transparent',
-                        color: isKidMode ? 'var(--paper)' : 'var(--ink-muted)',
-                    }}
-                >
-                    🎈 Kid
-                </span>
-                <span
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-sm text-sm font-medium transition-all duration-300"
-                    style={{
-                        backgroundColor: !isKidMode ? 'var(--ink)' : 'transparent',
-                        color: !isKidMode ? 'var(--paper)' : 'var(--ink-muted)',
-                    }}
-                >
-                    🎯 Pro
-                </span>
+                <div
+                    className="w-8 h-8 bg-primary border-3 border-ink rounded-full absolute transition-all duration-300 shadow-sm z-10"
+                    style={{ left: mode === 'pro' ? 'calc(100% - 2.2rem)' : '2px' }}
+                />
             </button>
+
+            <span className={`font-bold text-sm pr-2 ${mode === 'pro' ? 'text-ink' : 'text-gray-400'}`}>
+                DEEP
+            </span>
         </div>
-    );
-}
-
-export function ModeSwitch({
-    mode,
-    onModeChange,
-    size = 'md'
-}: {
-    mode: 'kid' | 'pro';
-    onModeChange: (mode: 'kid' | 'pro') => void;
-    size?: 'sm' | 'md';
-}) {
-    const isKidMode = mode === 'kid';
-
-    const sizes = {
-        sm: 'h-7 text-xs',
-        md: 'h-9 text-sm'
-    };
-
-    return (
-        <div
-            className={`inline-flex rounded-sm p-0.5 ${sizes[size]}`}
-            style={{
-                backgroundColor: 'var(--paper-sunken)',
-                border: '1px solid var(--border)',
-            }}
-        >
-            <button
-                onClick={() => onModeChange('kid')}
-                className="flex items-center gap-1 px-3 rounded-sm font-medium transition-all"
-                style={{
-                    backgroundColor: isKidMode ? 'var(--ink)' : 'transparent',
-                    color: isKidMode ? 'var(--paper)' : 'var(--ink-muted)',
-                }}
-            >
-                🎈 Kid
-            </button>
-            <button
-                onClick={() => onModeChange('pro')}
-                className="flex items-center gap-1 px-3 rounded-sm font-medium transition-all"
-                style={{
-                    backgroundColor: !isKidMode ? 'var(--ink)' : 'transparent',
-                    color: !isKidMode ? 'var(--paper)' : 'var(--ink-muted)',
-                }}
-            >
-                🎯 Pro
-            </button>
-        </div>
-    );
-}
-
-export function ModeBadge({ mode }: { mode: 'kid' | 'pro' }) {
-    const isKidMode = mode === 'kid';
-
-    return (
-        <span
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-sm text-xs font-medium"
-            style={{
-                backgroundColor: 'var(--paper-sunken)',
-                color: 'var(--ink-light)',
-                border: '1px solid var(--border)',
-            }}
-        >
-            {isKidMode ? '🎈 Kid Mode' : '🎯 Pro Mode'}
-        </span>
-    );
+    )
 }

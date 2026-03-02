@@ -3,7 +3,6 @@
 import { usePathname } from 'next/navigation'
 import { Sidebar } from '@/components/ui/Sidebar'
 
-/** Routes where the sidebar should be hidden. */
 const SIDEBAR_HIDDEN_ROUTES = ['/', '/login', '/register', '/onboarding']
 
 export function LayoutShell({ children }: { children: React.ReactNode }) {
@@ -15,9 +14,9 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <div className="flex min-h-screen">
+        <div className="relative min-h-screen flex bg-canvas text-ink">
             <Sidebar />
-            <main className="flex-1 min-h-screen ml-0 md:ml-sidebar transition-[margin] duration-300">
+            <main className="flex-1 ml-0 md:ml-[280px] flex flex-col min-h-screen relative min-w-0 overflow-x-hidden">
                 {children}
             </main>
         </div>

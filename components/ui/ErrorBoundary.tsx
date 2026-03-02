@@ -1,7 +1,6 @@
 'use client'
 
 import React, { Component, ReactNode } from 'react'
-import { RotateCcw } from 'lucide-react'
 
 interface Props {
     children: ReactNode
@@ -37,24 +36,19 @@ export class ErrorBoundary extends Component<Props, State> {
 
             return (
                 <div className="min-h-[50vh] flex items-center justify-center px-8">
-                    <div className="editorial-card p-8 md:p-12 text-center max-w-md">
-                        <p
-                            className="font-serif text-2xl font-bold mb-3"
-                            style={{ color: 'var(--ink)' }}
-                        >
+                    <div className="bg-white border-3 border-ink shadow-hard p-8 md:p-12 text-center max-w-md">
+                        <span className="material-symbols-outlined text-5xl text-alert mb-4 block">error</span>
+                        <p className="font-display text-2xl font-bold mb-3">
                             Something went wrong
                         </p>
-                        <p
-                            className="text-sm mb-6"
-                            style={{ color: 'var(--ink-muted)' }}
-                        >
+                        <p className="font-mono text-sm text-ink/60 mb-6">
                             An unexpected error occurred while loading this page.
                         </p>
                         <button
                             onClick={this.handleReset}
-                            className="btn-primary inline-flex items-center gap-2"
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-primary border-3 border-ink shadow-hard font-bold hover:shadow-hard-hover hover:-translate-y-1 transition-all"
                         >
-                            <RotateCcw className="w-4 h-4" />
+                            <span className="material-symbols-outlined text-lg">refresh</span>
                             Try Again
                         </button>
                     </div>

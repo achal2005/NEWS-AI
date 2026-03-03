@@ -45,14 +45,18 @@ export default function DashboardPage() {
     const [refreshing, setRefreshing] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
-    const fetchArticles = useCallback(async (retries = 2) => {
+    const fetchArticles = useCallback(async (retries = 4) => {
         setLoading(true)
         setError(null)
         for (let attempt = 0; attempt <= retries; attempt++) {
             try {
+                const controller = new AbortController()
+                const timeoutId = setTimeout(() => controller.abort(), 60000) // 60s timeout for Render cold starts
                 const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/news?page_size=20`, {
                     cache: 'no-store',
+                    signal: controller.signal,
                 })
+                clearTimeout(timeoutId)
                 if (res.ok) {
                     const data = await res.json()
                     setArticles(data.items || [])
@@ -62,7 +66,8 @@ export default function DashboardPage() {
             } catch (err) {
                 console.error(`Fetch attempt ${attempt + 1} failed:`, err)
                 if (attempt < retries) {
-                    await new Promise(r => setTimeout(r, 2000 * (attempt + 1)))
+                    // Exponential backoff: 3s, 6s, 12s, 24s — enough for Render cold starts
+                    await new Promise(r => setTimeout(r, 3000 * Math.pow(2, attempt)))
                 }
             }
         }

@@ -11,8 +11,8 @@ interface Article {
     title: string
     content: string
     category: string
-    source: string
-    url: string
+    source_name: string
+    source_url: string
     image_url: string | null
     published_at: string
 }
@@ -170,7 +170,7 @@ export default function ArticlePage() {
                         Reading Mode: {summaryMode === 'pro' ? 'Deep Dive' : 'Skim'}
                     </div>
                     <div className="flex items-center gap-4">
-                        <a href={article.url} target="_blank" rel="noopener noreferrer"
+                        <a href={article.source_url} target="_blank" rel="noopener noreferrer"
                             className="size-10 flex items-center justify-center border-3 border-ink bg-white shadow-hard-sm hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"
                             title="View Source">
                             <span className="material-symbols-outlined">open_in_new</span>
@@ -198,7 +198,7 @@ export default function ArticlePage() {
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-primary border-3 border-ink shadow-hard font-mono text-sm font-bold">
                         <div className="flex items-center gap-2">
                             <span className="material-symbols-outlined text-lg">newspaper</span>
-                            <span>SOURCE: {article.source?.toUpperCase() || 'NEWS'}</span>
+                            <span>SOURCE: {article.source_name?.toUpperCase() || 'NEWS'}</span>
                         </div>
                         <div className="hidden md:block w-px h-4 bg-ink" />
                         <div className="flex items-center gap-2">
@@ -295,7 +295,7 @@ export default function ArticlePage() {
                             <div className="absolute inset-0 bg-primary mix-blend-color opacity-20" />
                         </div>
                         <figcaption className="mt-3 font-mono text-xs uppercase tracking-wider text-right text-gray-500">
-                            // Image: {article.source || 'Source'}
+                            // Image: {article.source_name || 'Source'}
                         </figcaption>
                     </figure>
                 )}

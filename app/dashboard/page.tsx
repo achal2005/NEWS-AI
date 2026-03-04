@@ -12,8 +12,8 @@ interface Article {
     title: string
     content: string
     category: string
-    source: string
-    url: string
+    source_name: string
+    source_url: string
     image_url: string | null
     published_at: string
 }

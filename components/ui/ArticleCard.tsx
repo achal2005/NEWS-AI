@@ -8,7 +8,7 @@ interface ArticleCardProps {
         title: string
         category: string
         published_at: string
-        source: string
+        source_name: string
         image_url?: string | null
         content?: string
     }
@@ -47,7 +47,7 @@ export function ArticleCard({ article, index = 0, size = 'normal' }: ArticleCard
                         {article.category?.toUpperCase() || 'NEWS'}
                     </span>
                     <span className={`text-xs font-bold px-2 py-0.5 border-2 ${isDark ? 'border-zinc-700 bg-zinc-800' : 'border-ink bg-white'}`}>
-                        {article.source || 'SOURCE'}
+                        {article.source_name || 'SOURCE'}
                     </span>
                     {size === 'featured' && (
                         <span className="text-xs font-bold bg-primary border-2 border-ink px-2 py-0.5 shadow-hard-sm text-ink">

@@ -39,28 +39,41 @@ function getGridClass(index: number) {
 }
 
 export default function DashboardPage() {
-    const { user } = useAuth()
+    const { user, token } = useAuth()
     const [articles, setArticles] = useState<Article[]>([])
     const [loading, setLoading] = useState(true)
     const [refreshing, setRefreshing] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [page, setPage] = useState(1)
+    const [totalArticles, setTotalArticles] = useState(0)
+    const [loadingMore, setLoadingMore] = useState(false)
 
-    const fetchArticles = useCallback(async (retries = 4) => {
-        setLoading(true)
+    const fetchArticles = useCallback(async (retries = 4, pageNum = 1, append = false) => {
+        if (pageNum === 1) setLoading(true)
+        else setLoadingMore(true)
         setError(null)
         for (let attempt = 0; attempt <= retries; attempt++) {
             try {
                 const controller = new AbortController()
                 const timeoutId = setTimeout(() => controller.abort(), 60000) // 60s timeout for Render cold starts
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/news?page_size=20`, {
+                const headers: Record<string, string> = {}
+                if (token) headers['Authorization'] = `Bearer ${token}`
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/news?page=${pageNum}&page_size=20`, {
                     cache: 'no-store',
                     signal: controller.signal,
+                    headers,
                 })
                 clearTimeout(timeoutId)
                 if (res.ok) {
                     const data = await res.json()
-                    setArticles(data.items || [])
+                    if (append) {
+                        setArticles(prev => [...prev, ...(data.items || [])])
+                    } else {
+                        setArticles(data.items || [])
+                    }
+                    setTotalArticles(data.total || 0)
                     setLoading(false)
+                    setLoadingMore(false)
                     return
                 }
             } catch (err) {
@@ -73,7 +86,8 @@ export default function DashboardPage() {
         }
         setError('Could not reach the server. It may be waking up — try again in a moment.')
         setLoading(false)
-    }, [])
+        setLoadingMore(false)
+    }, [token])
 
     useEffect(() => {
         fetchArticles()
@@ -92,8 +106,15 @@ export default function DashboardPage() {
             console.error('News refresh failed:', err)
         }
         // Now re-fetch articles from the database
-        await fetchArticles(0)
+        setPage(1)
+        await fetchArticles(0, 1, false)
         setRefreshing(false)
+    }
+
+    const loadMore = async () => {
+        const nextPage = page + 1
+        setPage(nextPage)
+        await fetchArticles(0, nextPage, true)
     }
 
     const formatDate = (date: string) => {
@@ -178,16 +199,51 @@ export default function DashboardPage() {
                         </button>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 auto-rows-[minmax(180px,auto)] grid-flow-dense pb-12 max-w-[1400px] mx-auto">
-                        {articles.map((article, i) => {
-                            const { className, size } = getGridClass(i)
-                            return (
-                                <div key={article.id} className={className}>
-                                    <ArticleCard article={article} index={i} size={size} />
+                    <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 auto-rows-[minmax(180px,auto)] grid-flow-dense pb-12 max-w-[1400px] mx-auto">
+                            {articles.map((article, i) => {
+                                const { className, size } = getGridClass(i)
+                                return (
+                                    <div key={article.id} className={className}>
+                                        <ArticleCard article={article} index={i} size={size} />
+                                    </div>
+                                )
+                            })}
+                        </div>
+
+                        {/* Load More + Quiz CTA */}
+                        <div className="flex flex-col items-center gap-6 py-12 max-w-[1400px] mx-auto">
+                            {articles.length < totalArticles && (
+                                <button
+                                    onClick={loadMore}
+                                    disabled={loadingMore}
+                                    className="flex items-center gap-2 px-8 py-3 bg-white border-3 border-ink shadow-hard font-bold text-sm uppercase hover:bg-primary hover:-translate-y-1 hover:shadow-hard-hover transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                >
+                                    <span className={`material-symbols-outlined text-lg ${loadingMore ? 'animate-spin' : ''}`}>
+                                        {loadingMore ? 'progress_activity' : 'expand_more'}
+                                    </span>
+                                    {loadingMore ? 'LOADING...' : `LOAD MORE (${articles.length} / ${totalArticles})`}
+                                </button>
+                            )}
+
+                            {/* Quiz CTA */}
+                            <Link
+                                href="/quiz"
+                                className="w-full max-w-md border-3 border-ink bg-ink text-primary p-6 shadow-hard hover:-translate-y-1 hover:shadow-hard-hover transition-all flex items-center justify-between group"
+                            >
+                                <div>
+                                    <span className="text-xs font-mono font-bold opacity-70 block mb-1">GAMIFICATION</span>
+                                    <h3 className="font-display font-black text-xl uppercase group-hover:underline decoration-primary decoration-3">
+                                        Take the Pop Quiz →
+                                    </h3>
+                                    <p className="font-mono text-xs text-primary/70 mt-1">
+                                        Test your knowledge and earn XP
+                                    </p>
                                 </div>
-                            )
-                        })}
-                    </div>
+                                <span className="material-symbols-outlined text-4xl text-primary group-hover:scale-110 transition-transform">quiz</span>
+                            </Link>
+                        </div>
+                    </>
                 )}
             </div>
         </>

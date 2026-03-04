@@ -35,6 +35,7 @@ export default function ArticlePage() {
     const [jargon, setJargon] = useState<JargonTerm[]>([])
     const [summaryMode, setSummaryMode] = useState('pro')
     const [loadingSummary, setLoadingSummary] = useState(false)
+    const [regenerating, setRegenerating] = useState(false)
     const [loading, setLoading] = useState(true)
     const [readingProgress, setReadingProgress] = useState(0)
     const [showJargon, setShowJargon] = useState(false)
@@ -132,6 +133,36 @@ export default function ArticlePage() {
         setSummaryMode(mode)
     }
 
+    const regenerateSummary = async () => {
+        if (!token) return
+        setRegenerating(true)
+        setSummaryError(null)
+        try {
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/api/news/${articleId}/regenerate-summary?mode=${summaryMode}`,
+                {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token}` },
+                    cache: 'no-store',
+                }
+            )
+            if (res.ok) {
+                const data = await res.json()
+                setSummary(data.summary)
+                lastFetchedModeRef.current = summaryMode
+            } else if (res.status === 429) {
+                setSummaryError('AI quota reached. Please try again in a few minutes.')
+            } else {
+                setSummaryError('Failed to regenerate summary. Try again.')
+            }
+        } catch (err) {
+            console.error('Failed to regenerate summary:', err)
+            setSummaryError('Could not reach the server.')
+        } finally {
+            setRegenerating(false)
+        }
+    }
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -223,6 +254,17 @@ export default function ArticlePage() {
                             </span>
                         </div>
                         <SummaryModeToggle mode={summaryMode} onModeChange={handleModeChange} />
+                        {token && (
+                            <button
+                                onClick={regenerateSummary}
+                                disabled={regenerating || loadingSummary}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary border-2 border-ink shadow-hard-sm font-bold text-xs uppercase hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Regenerate summary with current depth settings"
+                            >
+                                <span className={`material-symbols-outlined text-sm ${regenerating ? 'animate-spin' : ''}`}>refresh</span>
+                                {regenerating ? 'REGENERATING...' : 'REGENERATE'}
+                            </button>
+                        )}
                     </div>
 
                     {loadingSummary ? (

@@ -51,7 +51,8 @@ export default function OnboardingPage() {
                 body: JSON.stringify({
                     preferred_categories: selectedCategories,
                     summary_mode: selectedRole === 'casual' ? 'kid' : 'pro',
-                    reading_level: selectedRole === 'professional' ? 8 : 5,
+                    reading_level: selectedRole === 'professional' ? 8 : selectedRole === 'student' ? 5 : 3,
+                    depth_preference: selectedRole === 'professional' ? 8 : selectedRole === 'student' ? 5 : 3,
                 }),
             })
         } catch (err) {
@@ -97,8 +98,8 @@ export default function OnboardingPage() {
                                         key={role.id}
                                         onClick={() => setSelectedRole(role.id)}
                                         className={`w-full text-left p-5 border-3 border-ink transition-all ${selectedRole === role.id
-                                                ? 'bg-primary shadow-hard -translate-y-1'
-                                                : 'bg-canvas hover:bg-paper-accent shadow-hard-sm hover:shadow-hard'
+                                            ? 'bg-primary shadow-hard -translate-y-1'
+                                            : 'bg-canvas hover:bg-paper-accent shadow-hard-sm hover:shadow-hard'
                                             }`}
                                     >
                                         <span className="font-bold text-xl font-sans block">{role.label}</span>
@@ -128,8 +129,8 @@ export default function OnboardingPage() {
                                         key={cat.id}
                                         onClick={() => toggleCategory(cat.id)}
                                         className={`flex flex-col items-center gap-2 p-4 border-3 border-ink transition-all ${selectedCategories.includes(cat.id)
-                                                ? 'bg-primary shadow-hard -translate-y-1'
-                                                : 'bg-canvas shadow-hard-sm hover:shadow-hard hover:bg-paper-accent'
+                                            ? 'bg-primary shadow-hard -translate-y-1'
+                                            : 'bg-canvas shadow-hard-sm hover:shadow-hard hover:bg-paper-accent'
                                             }`}
                                     >
                                         <span className="material-symbols-outlined text-3xl">{cat.icon}</span>

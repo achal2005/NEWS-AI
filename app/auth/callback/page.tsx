@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useAuth } from '@/lib/auth'
 
 function CallbackHandler() {
@@ -10,19 +10,40 @@ function CallbackHandler() {
     const router = useRouter()
     const { login } = useAuth()
     const [error, setError] = useState<string | null>(null)
+    const attemptedRef = useRef(false)
 
     useEffect(() => {
+        // Prevent double-invocation from React StrictMode or re-renders
+        if (attemptedRef.current) return
+        attemptedRef.current = true
+
         const code = searchParams.get('code')
-        if (code) {
-            login(code)
-                .then(({ profileComplete }) => {
-                    router.push(profileComplete ? '/dashboard' : '/onboarding')
-                })
-                .catch((err: Error) => setError(err.message))
-        } else {
+        if (!code) {
             setError('No authorization code received')
+            return
         }
-    }, [searchParams, login, router])
+
+        const attemptLogin = async (retries = 2) => {
+            for (let attempt = 0; attempt <= retries; attempt++) {
+                try {
+                    const { profileComplete } = await login(code)
+                    // Successful login — redirect immediately
+                    router.replace(profileComplete ? '/dashboard' : '/onboarding')
+                    return
+                } catch (err) {
+                    console.error(`Login attempt ${attempt + 1} failed:`, err)
+                    if (attempt < retries) {
+                        // Wait before retrying (Render cold start can take a while)
+                        await new Promise(r => setTimeout(r, 3000 * (attempt + 1)))
+                    }
+                }
+            }
+            // All retries exhausted
+            setError('Login failed. The server may be waking up — please try again.')
+        }
+
+        attemptLogin()
+    }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
         <div className="min-h-screen bg-canvas flex items-center justify-center">

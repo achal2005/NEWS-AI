@@ -108,12 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         await fetchUser(authToken)
 
-        // Redirect to onboarding if profile is not complete
-        if (!data.profile_complete) {
-            router.push('/onboarding')
-        }
-
-        return { profileComplete: data.profile_complete }
+        return { profileComplete: data.profile_complete ?? false }
     }
 
     const logout = () => {

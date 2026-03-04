@@ -51,7 +51,11 @@ export default function ProfilePage() {
                 if (res.ok) {
                     const data = await res.json()
                     setProfile(data)
-                    setSelectedCategories(data.preferred_categories || [])
+                    // Only keep categories that have UI toggles — strip ghost categories
+                    const validCategories = (data.preferred_categories || []).filter(
+                        (c: string) => CATEGORIES.includes(c)
+                    )
+                    setSelectedCategories(validCategories)
                     setSummaryMode(data.summary_mode || 'pro')
                     setDepthPreference(data.depth_preference || 5)
                 }

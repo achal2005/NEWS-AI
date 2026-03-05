@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Space_Grotesk, Space_Mono, Noto_Serif_Display } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/lib/auth'
+import { QueryProvider } from '@/components/QueryProvider'
 import { ThemeProvider } from '@/components/ui/ThemeProvider'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { LayoutShell } from '@/components/ui/LayoutShell'
@@ -52,13 +53,15 @@ export default function RootLayout({
                 {/* Noise texture overlay */}
                 <div className="noise-overlay" />
                 <AuthProvider>
-                    <ThemeProvider>
-                        <LayoutShell>
-                            <ErrorBoundary>
-                                {children}
-                            </ErrorBoundary>
-                        </LayoutShell>
-                    </ThemeProvider>
+                    <QueryProvider>
+                        <ThemeProvider>
+                            <LayoutShell>
+                                <ErrorBoundary>
+                                    {children}
+                                </ErrorBoundary>
+                            </LayoutShell>
+                        </ThemeProvider>
+                    </QueryProvider>
                 </AuthProvider>
             </body>
         </html>

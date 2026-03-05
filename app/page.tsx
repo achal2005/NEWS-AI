@@ -3,6 +3,10 @@
 import Link from 'next/link'
 import { useEffect, useState, useRef } from 'react'
 
+// Pre-warm backend on landing (wakes Render before user navigates to login)
+if (typeof window !== 'undefined') {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/health`, { cache: 'no-store' }).catch(() => { })
+}
 const SCENES = [
     {
         id: 'hero',

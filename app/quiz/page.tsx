@@ -99,7 +99,8 @@ export default function QuizPage() {
             selected_answer: answer,
         }])
 
-        // Auto-advance after 1.5s
+        // Auto-advance after delay (longer if hint is shown)
+        const delay = question?.hint ? 2800 : 1500;
         setTimeout(() => {
             if (activeQuiz && currentQ < activeQuiz.questions.length - 1) {
                 setCurrentQ(prev => prev + 1)
@@ -108,7 +109,7 @@ export default function QuizPage() {
             } else {
                 setPhase('results')
             }
-        }, 1500)
+        }, delay)
     }
 
     const submitQuiz = async () => {
@@ -224,7 +225,7 @@ export default function QuizPage() {
                             </p>
                             <div className="flex gap-4 justify-center">
                                 <button
-                                    onClick={() => { submitQuiz(); setPhase('list') }}
+                                    onClick={async () => { await submitQuiz(); setPhase('list') }}
                                     disabled={submitting}
                                     className="px-6 py-3 bg-ink text-primary border-3 border-ink font-bold shadow-hard hover:bg-primary hover:text-ink transition-colors"
                                 >

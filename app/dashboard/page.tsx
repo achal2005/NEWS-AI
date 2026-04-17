@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { useRef, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth'
@@ -111,7 +112,9 @@ export default function DashboardPage() {
     const refreshArticles = async () => {
         setRefreshing(true)
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/news/refresh`, { cache: 'no-store' })
+            const headers: Record<string, string> = {}
+            if (token) headers['Authorization'] = `Bearer ${token}`
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/news/refresh`, { cache: 'no-store', headers })
             if (res.ok) {
                 refetch()
             }
@@ -186,6 +189,20 @@ export default function DashboardPage() {
                             RETRY
                         </button>
                     </div>
+                ) : articles.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 gap-4">
+                        <span className="material-symbols-outlined text-6xl text-gray-400">inbox</span>
+                        <p className="font-mono text-sm text-gray-500 text-center max-w-md">
+                            No articles yet for your selected topics. Try refreshing or updating your interests in Settings.
+                        </p>
+                        <button
+                            onClick={refreshArticles}
+                            disabled={refreshing}
+                            className="brutal-button bg-primary text-ink border-3 border-ink px-6 py-2 font-mono font-bold text-xs tracking-wider shadow-hard hover:shadow-hard-hover"
+                        >
+                            REFRESH
+                        </button>
+                    </div>
                 ) : (
                     <>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 auto-rows-[minmax(180px,auto)] grid-flow-dense pb-12 max-w-[1400px] mx-auto">
@@ -245,6 +262,3 @@ export default function DashboardPage() {
         </div>
     )
 }
-
-// Need React import for useState in refreshing state
-import React from 'react'

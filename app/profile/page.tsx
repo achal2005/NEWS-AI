@@ -11,8 +11,8 @@ interface TasteProfile {
 }
 
 const CATEGORIES = [
-    'Technology', 'Science', 'Business', 'Health',
-    'Sports', 'Entertainment', 'Politics', 'General',
+    'technology', 'science', 'business', 'health',
+    'sports', 'entertainment', 'politics', 'general',
 ]
 
 export default function ProfilePage() {
@@ -20,6 +20,7 @@ export default function ProfilePage() {
     const [profile, setProfile] = useState<TasteProfile | null>(null)
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
+    const [saved, setSaved] = useState(false)
     const [displayName, setDisplayName] = useState('')
     const [bio, setBio] = useState('')
     const [selectedCategories, setSelectedCategories] = useState<string[]>([])
@@ -85,6 +86,7 @@ export default function ProfilePage() {
                     Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
+                    display_name: displayName,
                     preferred_categories: selectedCategories,
                     summary_mode: summaryMode,
                     depth_preference: depthToSave,
@@ -95,6 +97,8 @@ export default function ProfilePage() {
             if (profile) {
                 setProfile({ ...profile, depth_preference: depthToSave })
             }
+            setSaved(true)
+            setTimeout(() => setSaved(false), 2000)
         } catch (err) {
             console.error('Failed to save profile:', err)
         } finally {
@@ -133,7 +137,7 @@ export default function ProfilePage() {
                         className="px-6 py-2 bg-primary border-3 border-ink font-bold shadow-hard hover:shadow-hard-hover transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none flex items-center gap-2"
                     >
                         <span className="material-symbols-outlined text-lg">save</span>
-                        {saving ? 'SAVING...' : 'SAVE CHANGES'}
+                        {saving ? 'SAVING...' : saved ? 'SAVED ✓' : 'SAVE CHANGES'}
                     </button>
                 </div>
             </header>
@@ -248,7 +252,7 @@ export default function ProfilePage() {
                                             : 'bg-white hover:bg-paper-accent shadow-hard-sm hover:shadow-hard'
                                             }`}
                                     >
-                                        {cat}
+                                        {cat.charAt(0).toUpperCase() + cat.slice(1)}
                                     </button>
                                 ))}
                             </div>

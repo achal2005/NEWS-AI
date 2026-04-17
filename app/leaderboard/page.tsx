@@ -60,7 +60,11 @@ export default function LeaderboardPage() {
                 <div className="flex items-center gap-4">
                     <h2 className="text-2xl font-black uppercase tracking-tight font-sans">Weekly Top Readers</h2>
                     <span className="bg-ink text-primary px-2 py-1 text-xs font-mono font-bold">
-                        SEASON 4 // WEEK 12
+                        {(() => {
+                            const now = new Date();
+                            const weekNum = Math.ceil(now.getDate() / 7);
+                            return `WEEK ${weekNum} // ${now.toLocaleString('default', { month: 'short' }).toUpperCase()} ${now.getFullYear()}`;
+                        })()}
                     </span>
                 </div>
                 {userRank && (

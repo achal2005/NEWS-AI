@@ -1,38 +1,76 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+
+type ServerStatus = 'checking' | 'ready' | 'slow' | 'error'
 
 export default function LoginPage() {
     const [loading, setLoading] = useState(false)
-    const [serverReady, setServerReady] = useState(false)
+    const [serverStatus, setServerStatus] = useState<ServerStatus>('checking')
+    const [authError, setAuthError] = useState<string | null>(null)
+    const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-    // Pre-warm backend on mount (wakes Render before user clicks Sign In)
-    useEffect(() => {
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/health`, { cache: 'no-store' })
-            .then(() => setServerReady(true))
-            .catch(() => {
-                // Retry once after 2s
-                setTimeout(() => {
-                    fetch(`${process.env.NEXT_PUBLIC_API_URL}/health`, { cache: 'no-store' })
-                        .then(() => setServerReady(true))
-                        .catch(() => { })
-                }, 2000)
-            })
+    const checkServer = useCallback(async () => {
+        setServerStatus('checking')
+
+        // Set a 10-second timeout — if server hasn't responded, let the user proceed anyway
+        timeoutRef.current = setTimeout(() => {
+            setServerStatus((prev) => (prev === 'checking' ? 'ready' : prev))
+        }, 10000)
+
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/health`, { cache: 'no-store' })
+            if (res.ok) {
+                if (timeoutRef.current) clearTimeout(timeoutRef.current)
+                setServerStatus('ready')
+                return
+            }
+        } catch {
+            // First attempt failed, retry after 2s
+        }
+
+        // Retry once after 2s
+        await new Promise((r) => setTimeout(r, 2000))
+
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/health`, { cache: 'no-store' })
+            if (res.ok) {
+                if (timeoutRef.current) clearTimeout(timeoutRef.current)
+                setServerStatus('ready')
+                return
+            }
+        } catch {
+            // Second attempt failed
+        }
+
+        // Both failed — if timeout hasn't already set 'slow', set 'error'
+        if (timeoutRef.current) clearTimeout(timeoutRef.current)
+        setServerStatus((prev) => (prev === 'slow' ? 'slow' : 'error'))
     }, [])
+
+    useEffect(() => {
+        checkServer()
+        return () => {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current)
+        }
+    }, [checkServer])
 
     const handleGoogleLogin = async () => {
         setLoading(true)
+        setAuthError(null)
         try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/google`)
             if (res.ok) {
                 const data = await res.json()
                 window.location.href = data.auth_url
             } else {
+                setAuthError('Failed to connect to authentication service. Please try again.')
                 setLoading(false)
             }
         } catch (err) {
             console.error('Failed to get Google auth URL:', err)
+            setAuthError('Unable to reach the server. It may still be starting up — please wait a moment and try again.')
             setLoading(false)
         }
     }
@@ -67,11 +105,11 @@ export default function LoginPage() {
                         <div className="space-y-3">
                             <div className="flex items-center gap-3 p-3 border-2 border-ink/10 bg-canvas/50">
                                 <span className="material-symbols-outlined text-primary-dark text-lg">auto_stories</span>
-                                <span className="font-mono text-sm">AI summaries in Skim & Deep Dive modes</span>
+                                <span className="font-mono text-sm">AI summaries in Skim &amp; Deep Dive modes</span>
                             </div>
                             <div className="flex items-center gap-3 p-3 border-2 border-ink/10 bg-canvas/50">
                                 <span className="material-symbols-outlined text-primary-dark text-lg">bolt</span>
-                                <span className="font-mono text-sm">Weekly quizzes & competitive leaderboard</span>
+                                <span className="font-mono text-sm">Weekly quizzes &amp; competitive leaderboard</span>
                             </div>
                             <div className="flex items-center gap-3 p-3 border-2 border-ink/10 bg-canvas/50">
                                 <span className="material-symbols-outlined text-primary-dark text-lg">tune</span>
@@ -81,10 +119,26 @@ export default function LoginPage() {
 
                         <div className="h-px bg-ink/10" />
 
+                        {/* Auth Error Banner */}
+                        {authError && (
+                            <div className="border-3 border-primary bg-primary/5 p-4 flex items-start gap-3">
+                                <span className="material-symbols-outlined text-primary text-xl flex-shrink-0 mt-0.5">error</span>
+                                <div className="flex-1">
+                                    <p className="font-mono text-sm text-ink/80">{authError}</p>
+                                    <button
+                                        onClick={() => { setAuthError(null); handleGoogleLogin() }}
+                                        className="mt-2 font-bold text-xs uppercase tracking-wider text-primary hover:text-ink transition-colors underline decoration-2 underline-offset-2"
+                                    >
+                                        Try Again
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Google Sign In */}
                         <button
                             onClick={handleGoogleLogin}
-                            disabled={loading}
+                            disabled={loading || serverStatus !== 'ready'}
                             className="w-full py-4 bg-ink text-white border-3 border-ink font-bold text-base uppercase tracking-wide shadow-hard hover:bg-primary hover:text-ink hover:shadow-hard-hover hover:-translate-y-1 transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-wait"
                         >
                             {loading ? (
@@ -106,10 +160,41 @@ export default function LoginPage() {
                         </button>
 
                         {/* Server status */}
-                        {!serverReady && (
+                        {serverStatus === 'checking' && (
                             <div className="flex items-center justify-center gap-2 py-1">
                                 <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
                                 <span className="font-mono text-[10px] text-ink/40 uppercase tracking-widest">Warming up server...</span>
+                            </div>
+                        )}
+
+                        {serverStatus === 'ready' && (
+                            <div className="flex items-center justify-center gap-2 py-1">
+                                <div className="w-2 h-2 bg-green-500 rounded-full" />
+                                <span className="font-mono text-[10px] text-ink/40 uppercase tracking-widest">Server ready</span>
+                            </div>
+                        )}
+
+                        {serverStatus === 'slow' && (
+                            <div className="border-2 border-yellow-500/30 bg-yellow-50 p-3 text-center">
+                                <p className="font-mono text-xs text-ink/60 mb-2">Server is starting up, please try again in a moment.</p>
+                                <button
+                                    onClick={checkServer}
+                                    className="font-bold text-xs uppercase tracking-wider text-ink hover:text-primary transition-colors border-2 border-ink px-3 py-1 bg-white shadow-hard-sm hover:-translate-y-0.5"
+                                >
+                                    Retry
+                                </button>
+                            </div>
+                        )}
+
+                        {serverStatus === 'error' && (
+                            <div className="border-2 border-primary/30 bg-primary/5 p-3 text-center">
+                                <p className="font-mono text-xs text-ink/60 mb-2">Service temporarily unavailable.</p>
+                                <button
+                                    onClick={checkServer}
+                                    className="font-bold text-xs uppercase tracking-wider text-ink hover:text-primary transition-colors border-2 border-ink px-3 py-1 bg-white shadow-hard-sm hover:-translate-y-0.5"
+                                >
+                                    Retry
+                                </button>
                             </div>
                         )}
 
@@ -129,10 +214,10 @@ export default function LoginPage() {
                 </div>
             </div>
 
-            {/* Back to landing */}
-            <Link href="/" className="relative z-10 mt-8 font-mono text-xs text-ink/40 hover:text-ink transition-colors flex items-center gap-1">
+            {/* Back to landing — icon and text properly separated */}
+            <Link href="/" className="relative z-10 mt-8 font-mono text-xs text-ink/40 hover:text-ink transition-colors flex items-center gap-2">
                 <span className="material-symbols-outlined text-sm">arrow_back</span>
-                BACK TO HOME
+                <span>BACK TO HOME</span>
             </Link>
         </div>
     )

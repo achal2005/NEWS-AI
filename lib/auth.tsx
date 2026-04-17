@@ -43,6 +43,12 @@ function clearTokenCookie() {
     document.cookie = 'token=; path=/; max-age=0; SameSite=Lax'
 }
 
+/** Read the token from the cookie. */
+function getTokenFromCookie(): string | null {
+    const match = document.cookie.match(/(?:^|;\s*)token=([^;]*)/)
+    return match ? decodeURIComponent(match[1]) : null
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
     const [token, setToken] = useState<string | null>(null)
@@ -50,12 +56,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const router = useRouter()
 
     useEffect(() => {
-        // Check for stored token on mount
-        const storedToken = localStorage.getItem('token')
+        // Check for token in cookie on mount
+        const storedToken = getTokenFromCookie()
         if (storedToken) {
             setToken(storedToken)
-            // Ensure cookie is also set (in case it was cleared)
-            setTokenCookie(storedToken)
             fetchUser(storedToken)
         } else {
             setIsLoading(false)
@@ -75,7 +79,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setUser(userData)
             } else {
                 // Token invalid, clear it
-                localStorage.removeItem('token')
                 clearTokenCookie()
                 setToken(null)
             }
@@ -102,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await res.json()
         const authToken = data.access_token
 
-        localStorage.setItem('token', authToken)
+        localStorage.removeItem('token') // Clean up any legacy storage
         setTokenCookie(authToken)
         setToken(authToken)
 
@@ -112,7 +115,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const logout = () => {
-        localStorage.removeItem('token')
         clearTokenCookie()
         setUser(null)
         setToken(null)

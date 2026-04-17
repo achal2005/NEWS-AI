@@ -108,6 +108,12 @@ export default function OnboardingPage() {
                                 ))}
                             </div>
 
+                            {!selectedRole && (
+                                <p className="font-mono text-xs text-ink/50 text-center mt-4">
+                                    Select a role above to continue
+                                </p>
+                            )}
+
                             <button
                                 onClick={() => setStep(1)}
                                 disabled={!selectedRole}

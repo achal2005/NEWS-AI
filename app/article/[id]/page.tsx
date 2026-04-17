@@ -46,6 +46,10 @@ export default function ArticlePage() {
     const pointsAwardedRef = useRef(false)
 
     useEffect(() => {
+        // Reset on article change so points aren't double-awarded
+        pointsAwardedRef.current = false
+        readingSecondsRef.current = 0
+
         // Start a 1-second interval to count reading time
         readingTimerRef.current = setInterval(() => {
             readingSecondsRef.current += 1
@@ -246,7 +250,7 @@ export default function ArticlePage() {
 
                 {/* AI Summary Section */}
                 <div className="mb-10 border-3 border-ink bg-white shadow-hard p-6">
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex flex-wrap items-center gap-2 mb-4">
                         <div className="flex items-center gap-2">
                             <span className="bg-ink text-primary px-2 py-1 text-xs font-mono font-bold">AI BRIEF</span>
                             <span className="font-mono text-xs text-ink/60">
@@ -258,7 +262,7 @@ export default function ArticlePage() {
                             <button
                                 onClick={regenerateSummary}
                                 disabled={regenerating || loadingSummary}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary border-2 border-ink shadow-hard-sm font-bold text-xs uppercase hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-primary border-2 border-ink shadow-hard-sm font-bold text-xs uppercase hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="Regenerate summary with current depth settings"
                             >
                                 <span className={`material-symbols-outlined text-sm ${regenerating ? 'animate-spin' : ''}`}>refresh</span>

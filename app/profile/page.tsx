@@ -16,7 +16,7 @@ const CATEGORIES = [
 ]
 
 export default function ProfilePage() {
-    const { user, token } = useAuth()
+    const { user, isAuthenticated } = useAuth()
     const [profile, setProfile] = useState<TasteProfile | null>(null)
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -41,12 +41,12 @@ export default function ProfilePage() {
     }, [depthPreference])
 
     useEffect(() => {
-        if (!token) { setLoading(false); return }
+        if (!isAuthenticated) { setLoading(false); return }
 
         const fetchProfile = async () => {
             try {
                 const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/profile`, {
-                    headers: { Authorization: `Bearer ${token}` },
+                    credentials: 'include',
                     cache: 'no-store',
                 })
                 if (res.ok) {
@@ -70,10 +70,10 @@ export default function ProfilePage() {
         if (user) {
             setDisplayName(user.display_name || '')
         }
-    }, [token, user])
+    }, [isAuthenticated, user])
 
     const saveProfile = async (currentDepth?: number) => {
-        if (!token) return
+        if (!isAuthenticated) return
         setSaving(true)
 
         const depthToSave = currentDepth !== undefined ? currentDepth : depthPreference
@@ -83,8 +83,8 @@ export default function ProfilePage() {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
                 },
+                credentials: 'include',
                 body: JSON.stringify({
                     display_name: displayName,
                     preferred_categories: selectedCategories,

@@ -28,7 +28,7 @@ interface QuizListItem {
 }
 
 export default function QuizPage() {
-    const { token } = useAuth()
+    const { isAuthenticated } = useAuth()
     const [quizzes, setQuizzes] = useState<QuizListItem[]>([])
     const [activeQuiz, setActiveQuiz] = useState<Quiz | null>(null)
     const [currentQ, setCurrentQ] = useState(0)
@@ -45,7 +45,7 @@ export default function QuizPage() {
         const fetchQuizzes = async () => {
             try {
                 // Ensure a weekly quiz exists (auto-generates if none)
-                await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz/weekly`, { cache: 'no-store' })
+                await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz/weekly`, { cache: 'no-store', credentials: 'include' })
 
                 // Now list all available quizzes
                 const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz/list`, { cache: 'no-store' })
@@ -64,7 +64,7 @@ export default function QuizPage() {
 
     const startQuiz = useCallback(async (quizId: string) => {
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz/${quizId}`, { cache: 'no-store' })
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz/${quizId}`, { cache: 'no-store', credentials: 'include' })
             if (res.ok) {
                 const data = await res.json()
                 setActiveQuiz(data)
@@ -113,15 +113,15 @@ export default function QuizPage() {
     }
 
     const submitQuiz = async () => {
-        if (!token || !activeQuiz) return
+        if (!isAuthenticated || !activeQuiz) return
         setSubmitting(true)
         try {
             await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz/submit`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
                 },
+                credentials: 'include',
                 body: JSON.stringify({
                     quiz_id: activeQuiz.id,
                     answers,

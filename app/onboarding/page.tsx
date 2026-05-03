@@ -22,7 +22,7 @@ const ROLES = [
 ]
 
 export default function OnboardingPage() {
-    const { token } = useAuth()
+    const { isAuthenticated } = useAuth()
     const router = useRouter()
     const [step, setStep] = useState(0)
     const [selectedRole, setSelectedRole] = useState('')
@@ -39,15 +39,15 @@ export default function OnboardingPage() {
     }
 
     const handleFinish = async () => {
-        if (!token) { router.push('/dashboard'); return }
+        if (!isAuthenticated) { router.push('/dashboard'); return }
         setSaving(true)
         try {
             await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/profile`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
                 },
+                credentials: 'include',
                 body: JSON.stringify({
                     preferred_categories: selectedCategories,
                     summary_mode: selectedRole === 'casual' ? 'kid' : 'pro',

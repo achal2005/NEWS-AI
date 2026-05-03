@@ -3,8 +3,8 @@ import type { NextRequest } from 'next/server'
 
 /**
  * Edge middleware for auth-gating protected routes.
- * Reads the `token` cookie (set by auth.tsx on login).
- * If no token and user tries to access protected paths, redirect to landing.
+ * FIX 3: Reads the `auth_token` HttpOnly cookie (set by backend).
+ * Edge middleware CAN read HttpOnly cookies — they are sent with every request.
  */
 
 const PROTECTED_PREFIXES = ['/dashboard', '/article', '/quiz', '/leaderboard', '/profile', '/onboarding']
@@ -22,13 +22,34 @@ export function middleware(request: NextRequest) {
     const isProtected = PROTECTED_PREFIXES.some(p => pathname.startsWith(p))
     if (!isProtected) return NextResponse.next()
 
-    // Check for auth token in cookie
-    const token = request.cookies.get('token')?.value
+    // FIX 3: Read HttpOnly cookie `auth_token` (renamed from `token`)
+    const token = request.cookies.get('auth_token')?.value
 
     if (!token) {
         // Redirect to landing page
         const loginUrl = new URL('/', request.url)
         return NextResponse.redirect(loginUrl)
+    }
+
+    // Validate JWT expiry (decode payload without signature verification — safe at edge)
+    try {
+        const [, payloadB64] = token.split('.')
+        if (payloadB64) {
+            // Handle base64url encoding (replace - with + and _ with /)
+            const base64 = payloadB64.replace(/-/g, '+').replace(/_/g, '/')
+            const payload = JSON.parse(atob(base64))
+            if (payload.exp && payload.exp * 1000 < Date.now()) {
+                // Token expired — clear cookie and redirect
+                const response = NextResponse.redirect(new URL('/', request.url))
+                response.cookies.delete('auth_token')  // FIX 3: renamed
+                return response
+            }
+        }
+    } catch {
+        // Malformed token — clear and redirect
+        const response = NextResponse.redirect(new URL('/', request.url))
+        response.cookies.delete('auth_token')  // FIX 3: renamed
+        return response
     }
 
     return NextResponse.next()

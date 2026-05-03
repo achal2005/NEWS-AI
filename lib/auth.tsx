@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface User {
@@ -23,7 +23,6 @@ interface User {
 
 interface AuthContextType {
     user: User | null
-    token: string | null
     isLoading: boolean
     isAuthenticated: boolean
     login: (code: string) => Promise<{ profileComplete: boolean }>
@@ -33,68 +32,54 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-/** Set a cookie (used by edge middleware to check auth). */
-function setTokenCookie(token: string) {
-    document.cookie = `token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
-}
-
-/** Clear the token cookie. */
-function clearTokenCookie() {
-    document.cookie = 'token=; path=/; max-age=0; SameSite=Lax'
-}
-
-/** Read the token from the cookie. */
-function getTokenFromCookie(): string | null {
-    const match = document.cookie.match(/(?:^|;\s*)token=([^;]*)/)
-    return match ? decodeURIComponent(match[1]) : null
-}
+/**
+ * FIX 3: Removed ALL JS-accessible cookie manipulation.
+ * Token now lives only in HttpOnly cookie set by the backend.
+ * Auth state is derived from /api/auth/me response.
+ * All API calls use credentials: 'include' instead of Authorization headers.
+ */
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
-    const [token, setToken] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const router = useRouter()
 
-    useEffect(() => {
-        // Check for token in cookie on mount
-        const storedToken = getTokenFromCookie()
-        if (storedToken) {
-            setToken(storedToken)
-            fetchUser(storedToken)
-        } else {
-            setIsLoading(false)
-        }
-    }, [])
-
-    const fetchUser = async (authToken: string) => {
+    const fetchUser = useCallback(async () => {
         try {
+            // FIX 3: Use credentials: 'include' — the HttpOnly cookie is sent automatically
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
-                headers: {
-                    'Authorization': `Bearer ${authToken}`
-                }
+                credentials: 'include',
             })
 
             if (res.ok) {
                 const userData = await res.json()
                 setUser(userData)
             } else {
-                // Token invalid, clear it
-                clearTokenCookie()
-                setToken(null)
+                // Cookie invalid or expired — clear user state
+                setUser(null)
             }
         } catch (error) {
             console.error('Failed to fetch user:', error)
+            setUser(null)
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [])
+
+    useEffect(() => {
+        // FIX 3: On mount, check auth status via /api/auth/me
+        // The HttpOnly cookie will be sent automatically by the browser
+        fetchUser()
+    }, [fetchUser])
 
     const login = async (code: string): Promise<{ profileComplete: boolean }> => {
+        // FIX 3: Use credentials: 'include' to receive the HttpOnly cookie
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/google/callback`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'include',  // FIX 3: receive the HttpOnly cookie
             body: JSON.stringify({ code })
         })
 
@@ -103,34 +88,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         const data = await res.json()
-        const authToken = data.access_token
 
-        localStorage.removeItem('token') // Clean up any legacy storage
-        setTokenCookie(authToken)
-        setToken(authToken)
-
-        await fetchUser(authToken)
+        // FIX 3: No JS token storage — fetch user from /me to populate state
+        await fetchUser()
 
         return { profileComplete: data.profile_complete ?? false }
     }
 
-    const logout = () => {
-        clearTokenCookie()
+    const logout = async () => {
+        // Call backend to clear the HttpOnly cookie
+        try {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`, {
+                method: 'POST',
+                credentials: 'include',
+            })
+        } catch (e) {
+            // Continue logout even if backend call fails
+        }
+        // FIX 3: No JS cookie to clear — just reset state
         setUser(null)
-        setToken(null)
         router.push('/')
     }
 
     const refreshUser = async () => {
-        if (token) {
-            await fetchUser(token)
-        }
+        await fetchUser()
     }
 
     return (
         <AuthContext.Provider value={{
             user,
-            token,
             isLoading,
             isAuthenticated: !!user,
             login,
@@ -179,4 +165,3 @@ export function withAuth<P extends object>(
         return <Component {...props} />
     }
 }
-

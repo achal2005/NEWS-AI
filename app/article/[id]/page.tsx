@@ -25,7 +25,7 @@ interface JargonTerm {
 
 export default function ArticlePage() {
     const params = useParams()
-    const { token } = useAuth()
+    const { isAuthenticated } = useAuth()
     const articleId = params.id as string
     const lastFetchedModeRef = useRef<string | null>(null)
 
@@ -59,20 +59,21 @@ export default function ArticlePage() {
             // On unmount: send accumulated reading time to backend
             if (readingTimerRef.current) clearInterval(readingTimerRef.current)
             const elapsed = readingSecondsRef.current
-            if (token && elapsed >= 5 && !pointsAwardedRef.current) {
+            if (isAuthenticated && elapsed >= 5 && !pointsAwardedRef.current) {
                 pointsAwardedRef.current = true
                 // Fire-and-forget POST with keepalive for reliability on page leave
                 const payload = JSON.stringify({ article_id: articleId, seconds: elapsed })
                 const url = `${process.env.NEXT_PUBLIC_API_URL}/api/user/reading-time`
                 fetch(url, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: payload,
                     keepalive: true,
                 }).catch(() => { })
             }
         }
-    }, [token, articleId])
+    }, [isAuthenticated, articleId])
 
     useEffect(() => {
         const handleScroll = () => {
@@ -100,7 +101,7 @@ export default function ArticlePage() {
 
     useEffect(() => { fetchArticle() }, [fetchArticle])
 
-    const fetchSummary = useCallback(async (mode: string, tokenArg: string) => {
+    const fetchSummary = useCallback(async (mode: string) => {
         // Prevent duplicate fetch for the same mode
         if (lastFetchedModeRef.current === mode) return
         lastFetchedModeRef.current = mode
@@ -109,7 +110,7 @@ export default function ArticlePage() {
         try {
             const res = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/api/news/${articleId}/summary?mode=${mode}`,
-                { headers: { Authorization: `Bearer ${tokenArg}` }, cache: 'no-store' }
+                { credentials: 'include', cache: 'no-store' }
             )
             if (res.ok) {
                 const data = await res.json()
@@ -129,8 +130,8 @@ export default function ArticlePage() {
     }, [articleId])
 
     useEffect(() => {
-        if (token) fetchSummary(summaryMode, token)
-    }, [summaryMode, token, fetchSummary])
+        if (isAuthenticated) fetchSummary(summaryMode)
+    }, [summaryMode, isAuthenticated, fetchSummary])
 
     const handleModeChange = (mode: string) => {
         lastFetchedModeRef.current = null // reset guard so mode switch fetches fresh
@@ -138,7 +139,7 @@ export default function ArticlePage() {
     }
 
     const regenerateSummary = async () => {
-        if (!token) return
+        if (!isAuthenticated) return
         setRegenerating(true)
         setSummaryError(null)
         try {
@@ -146,7 +147,7 @@ export default function ArticlePage() {
                 `${process.env.NEXT_PUBLIC_API_URL}/api/news/${articleId}/regenerate-summary?mode=${summaryMode}`,
                 {
                     method: 'POST',
-                    headers: { Authorization: `Bearer ${token}` },
+                    credentials: 'include',
                     cache: 'no-store',
                 }
             )
@@ -258,7 +259,7 @@ export default function ArticlePage() {
                             </span>
                         </div>
                         <SummaryModeToggle mode={summaryMode} onModeChange={handleModeChange} />
-                        {token && (
+                        {isAuthenticated && (
                             <button
                                 onClick={regenerateSummary}
                                 disabled={regenerating || loadingSummary}
@@ -284,7 +285,7 @@ export default function ArticlePage() {
                             <span className="material-symbols-outlined text-3xl text-alert">warning</span>
                             <p className="font-mono text-sm text-ink/60 text-center">{summaryError}</p>
                             <button
-                                onClick={() => { lastFetchedModeRef.current = null; if (token) fetchSummary(summaryMode, token) }}
+                                onClick={() => { lastFetchedModeRef.current = null; if (isAuthenticated) fetchSummary(summaryMode) }}
                                 className="px-4 py-2 bg-primary border-3 border-ink shadow-hard font-bold text-sm hover:shadow-hard-hover hover:-translate-y-1 transition-all"
                             >
                                 RETRY

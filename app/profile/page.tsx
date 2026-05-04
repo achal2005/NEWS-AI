@@ -16,7 +16,7 @@ const CATEGORIES = [
 ]
 
 export default function ProfilePage() {
-    const { user, isAuthenticated } = useAuth()
+    const { user, isAuthenticated, token } = useAuth()
     const [profile, setProfile] = useState<TasteProfile | null>(null)
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -45,8 +45,11 @@ export default function ProfilePage() {
 
         const fetchProfile = async () => {
             try {
+                const headers: Record<string, string> = {}
+                if (token) headers['Authorization'] = `Bearer ${token}`
+                
                 const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/profile`, {
-                    credentials: 'include',
+                    headers,
                     cache: 'no-store',
                 })
                 if (res.ok) {
@@ -83,8 +86,8 @@ export default function ProfilePage() {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
                 },
-                credentials: 'include',
                 body: JSON.stringify({
                     display_name: displayName,
                     preferred_categories: selectedCategories,

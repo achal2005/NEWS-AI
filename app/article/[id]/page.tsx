@@ -25,7 +25,7 @@ interface JargonTerm {
 
 export default function ArticlePage() {
     const params = useParams()
-    const { isAuthenticated } = useAuth()
+    const { isAuthenticated, token } = useAuth()
     const articleId = params.id as string
     const lastFetchedModeRef = useRef<string | null>(null)
 
@@ -66,8 +66,10 @@ export default function ArticlePage() {
                 const url = `${process.env.NEXT_PUBLIC_API_URL}/api/user/reading-time`
                 fetch(url, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
                     body: payload,
                     keepalive: true,
                 }).catch(() => { })
@@ -110,7 +112,10 @@ export default function ArticlePage() {
         try {
             const res = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/api/news/${articleId}/summary?mode=${mode}`,
-                { credentials: 'include', cache: 'no-store' }
+                {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+                    cache: 'no-store'
+                }
             )
             if (res.ok) {
                 const data = await res.json()
@@ -147,7 +152,7 @@ export default function ArticlePage() {
                 `${process.env.NEXT_PUBLIC_API_URL}/api/news/${articleId}/regenerate-summary?mode=${summaryMode}`,
                 {
                     method: 'POST',
-                    credentials: 'include',
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
                     cache: 'no-store',
                 }
             )

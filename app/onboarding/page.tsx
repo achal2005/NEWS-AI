@@ -22,7 +22,7 @@ const ROLES = [
 ]
 
 export default function OnboardingPage() {
-    const { isAuthenticated } = useAuth()
+    const { isAuthenticated, token } = useAuth()
     const router = useRouter()
     const [step, setStep] = useState(0)
     const [selectedRole, setSelectedRole] = useState('')
@@ -46,8 +46,8 @@ export default function OnboardingPage() {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
                 },
-                credentials: 'include',
                 body: JSON.stringify({
                     preferred_categories: selectedCategories,
                     summary_mode: selectedRole === 'casual' ? 'kid' : 'pro',

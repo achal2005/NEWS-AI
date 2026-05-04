@@ -23,6 +23,7 @@ interface User {
 
 interface AuthContextType {
     user: User | null
+    token: string | null
     isLoading: boolean
     isAuthenticated: boolean
     login: (code: string) => Promise<{ profileComplete: boolean }>
@@ -32,54 +33,80 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-/**
- * FIX 3: Removed ALL JS-accessible cookie manipulation.
- * Token now lives only in HttpOnly cookie set by the backend.
- * Auth state is derived from /api/auth/me response.
- * All API calls use credentials: 'include' instead of Authorization headers.
- */
+/** Set a cookie (used by edge middleware to check auth). */
+function setTokenCookie(token: string) {
+    document.cookie = `token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
+}
+
+/** Clear the token cookie. */
+function clearTokenCookie() {
+    document.cookie = 'token=; path=/; max-age=0; SameSite=Lax'
+}
+
+/** Read the token from the cookie. */
+function getTokenFromCookie(): string | null {
+    if (typeof document === 'undefined') return null
+    const match = document.cookie.match(/(?:^|;\s*)token=([^;]*)/)
+    return match ? decodeURIComponent(match[1]) : null
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
+    const [token, setToken] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const router = useRouter()
 
-    const fetchUser = useCallback(async () => {
+    const fetchUser = useCallback(async (authToken: string) => {
         try {
-            // FIX 3: Use credentials: 'include' — the HttpOnly cookie is sent automatically
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
-                credentials: 'include',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
             })
 
             if (res.ok) {
                 const userData = await res.json()
                 setUser(userData)
             } else {
-                // Cookie invalid or expired — clear user state
+                // Token invalid or expired — clear user state
                 setUser(null)
+                setToken(null)
+                clearTokenCookie()
+                localStorage.removeItem('token')
             }
         } catch (error) {
             console.error('Failed to fetch user:', error)
             setUser(null)
+            setToken(null)
         } finally {
             setIsLoading(false)
         }
     }, [])
 
     useEffect(() => {
-        // FIX 3: On mount, check auth status via /api/auth/me
-        // The HttpOnly cookie will be sent automatically by the browser
-        fetchUser()
+        // On mount, check for token in localStorage (or cookie)
+        const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+        const cookieToken = getTokenFromCookie()
+        const activeToken = storedToken || cookieToken
+
+        if (activeToken) {
+            setToken(activeToken)
+            // Ensure both storages have it
+            if (!storedToken) localStorage.setItem('token', activeToken)
+            if (!cookieToken) setTokenCookie(activeToken)
+            
+            fetchUser(activeToken)
+        } else {
+            setIsLoading(false)
+        }
     }, [fetchUser])
 
     const login = async (code: string): Promise<{ profileComplete: boolean }> => {
-        // FIX 3: Use credentials: 'include' to receive the HttpOnly cookie
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/google/callback`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            credentials: 'include',  // FIX 3: receive the HttpOnly cookie
             body: JSON.stringify({ code })
         })
 
@@ -88,35 +115,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         const data = await res.json()
+        const authToken = data.access_token
 
-        // FIX 3: No JS token storage — fetch user from /me to populate state
-        await fetchUser()
+        // Store the token
+        localStorage.setItem('token', authToken)
+        setTokenCookie(authToken)
+        setToken(authToken)
+
+        await fetchUser(authToken)
 
         return { profileComplete: data.profile_complete ?? false }
     }
 
     const logout = async () => {
-        // Call backend to clear the HttpOnly cookie
-        try {
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`, {
-                method: 'POST',
-                credentials: 'include',
-            })
-        } catch (e) {
-            // Continue logout even if backend call fails
-        }
-        // FIX 3: No JS cookie to clear — just reset state
+        // We only clear client-side state now, since backend relies on Authorization header
+        clearTokenCookie()
+        localStorage.removeItem('token')
         setUser(null)
+        setToken(null)
         router.push('/')
     }
 
     const refreshUser = async () => {
-        await fetchUser()
+        if (token) {
+            await fetchUser(token)
+        }
     }
 
     return (
         <AuthContext.Provider value={{
             user,
+            token,
             isLoading,
             isAuthenticated: !!user,
             login,
@@ -152,8 +181,8 @@ export function withAuth<P extends object>(
 
         if (isLoading) {
             return (
-                <div className="min-h-screen flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+                <div className="min-h-screen flex items-center justify-center bg-canvas">
+                    <div className="w-12 h-12 border-3 border-ink border-t-primary animate-spin" />
                 </div>
             )
         }

@@ -27,34 +27,34 @@
 
 /* ── Root Tokens ────────────────────────────────────────────── */
 :root {
-  --primary: #E02020;
-  --ink: #121212;
-  --canvas: #FFFDF5;
-  --alert: #0055FF;
-  --cool: #6F42C1;
-  --highlight: #FFEA00;
-  --paper-grey: #E5E5E5;
-  --paper-accent: #F0F0F0;
+  --primary: #475569;
+  --ink: #1E293B;
+  --canvas: #F8FAFC;
+  --alert: #3B82F6;
+  --cool: #6366F1;
+  --highlight: #E2E8F0;
+  --paper-grey: #F1F5F9;
+  --paper-accent: #E2E8F0;
 
   --font-display: 'Noto Serif Display', serif;
   --font-sans: 'Space Grotesk', sans-serif;
   --font-mono: 'Space Mono', monospace;
 
-  --shadow-hard: 4px 4px 0px 0px #121212;
-  --shadow-hard-hover: 6px 6px 0px 0px #121212;
-  --shadow-hard-sm: 2px 2px 0px 0px #121212;
+  --shadow-hard: 4px 4px 0px 0px #64748B;
+  --shadow-hard-hover: 6px 6px 0px 0px #64748B;
+  --shadow-hard-sm: 2px 2px 0px 0px #64748B;
 
   --border-width: 3px;
 
   /* Backward compat aliases */
-  --accent: #E02020;
-  --surface-0: #FFFDF5;
+  --accent: #475569;
+  --surface-0: #F8FAFC;
   --surface-1: #ffffff;
-  --text-primary: #121212;
-  --text-secondary: #333333;
-  --text-tertiary: #666666;
-  --text-quaternary: #999999;
-  --border: #121212;
+  --text-primary: #1E293B;
+  --text-secondary: #334155;
+  --text-tertiary: #475569;
+  --text-quaternary: #94A3B8;
+  --border: #64748B;
   --gutter: 1.5rem;
   --sidebar-width: 280px;
   --radius-sm: 0px;
@@ -64,9 +64,9 @@
   --duration-fast: 150ms;
   --duration-normal: 250ms;
   --duration-slow: 400ms;
-  --elevation-1: 2px 2px 0px 0px #121212;
-  --elevation-2: 4px 4px 0px 0px #121212;
-  --elevation-3: 6px 6px 0px 0px #121212;
+  --elevation-1: 2px 2px 0px 0px #64748B;
+  --elevation-2: 4px 4px 0px 0px #64748B;
+  --elevation-3: 6px 6px 0px 0px #64748B;
 }
 
 /* ── Base ───────────────────────────────────────────────────── */
@@ -123,13 +123,14 @@ body {
 
 .brutal-card:hover {
   transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0px 0px #121212;
+  box-shadow: 6px 6px 0px 0px #64748B;
 }
 
 /* ── Riso Image Effect ──────────────────────────────────────── */
 .riso-image {
-  filter: grayscale(100%) contrast(120%);
+  filter: grayscale(50%) contrast(105%);
   mix-blend-mode: multiply;
+  opacity: 0.9;
 }
 
 /* ── Noise Texture Overlay ──────────────────────────────────── */
@@ -138,7 +139,7 @@ body {
   inset: 0;
   pointer-events: none;
   z-index: 100;
-  opacity: 0.03;
+  opacity: 0.015;
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E");
 }

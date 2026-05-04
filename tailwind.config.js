@@ -7,15 +7,15 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: '#E02020',
-        'primary-dark': '#B01010',
-        ink: '#121212',
-        canvas: '#FFFDF5',
-        alert: '#0055FF',
-        cool: '#6F42C1',
-        highlight: '#FFEA00',
-        'paper-grey': '#E5E5E5',
-        'paper-accent': '#F0F0F0',
+        primary: '#475569',
+        'primary-dark': '#334155',
+        ink: '#1E293B',
+        canvas: '#F8FAFC',
+        alert: '#3B82F6',
+        cool: '#6366F1',
+        highlight: '#E2E8F0',
+        'paper-grey': '#F1F5F9',
+        'paper-accent': '#E2E8F0',
       },
       fontFamily: {
         display: ['var(--font-noto-serif)', 'Noto Serif Display', 'serif'],
@@ -24,10 +24,10 @@ module.exports = {
         mono: ['var(--font-space-mono)', 'Space Mono', 'monospace'],
       },
       boxShadow: {
-        hard: '4px 4px 0px 0px #121212',
-        'hard-hover': '6px 6px 0px 0px #121212',
-        'hard-sm': '2px 2px 0px 0px #121212',
-        'hard-lg': '8px 8px 0px 0px #121212',
+        hard: '4px 4px 0px 0px #64748B',
+        'hard-hover': '6px 6px 0px 0px #64748B',
+        'hard-sm': '2px 2px 0px 0px #64748B',
+        'hard-lg': '8px 8px 0px 0px #64748B',
       },
       borderWidth: {
         3: '3px',

@@ -389,7 +389,7 @@ export default function ArticlePage() {
                         <div>
                             <p className="font-mono text-sm uppercase text-gray-500 mb-2">Continue Reading</p>
                             <h3 className="font-display font-bold text-2xl group-hover:text-alert transition-colors">
-                                Back to THE DAILY BRIEF
+                                Back to NUTSHELL
                             </h3>
                         </div>
                         <span className="material-symbols-outlined text-3xl">arrow_forward</span>

@@ -2,8 +2,8 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-    title: 'Terms of Service — THE DAILY BRIEF',
-    description: 'Terms of Service for The Daily Brief AI news reader.',
+    title: 'Terms of Service — NUTSHELL',
+    description: 'Terms of Service for NutShell AI news reader.',
 }
 
 export default function TermsPage() {
@@ -28,7 +28,7 @@ export default function TermsPage() {
                     <section>
                         <h2 className="font-display font-bold text-xl uppercase mb-2 border-b-2 border-ink pb-2">Acceptance of Terms</h2>
                         <p className="text-sm leading-relaxed">
-                            By accessing and using The Daily Brief, you agree to be bound by these Terms of Service.
+                            By accessing and using NutShell, you agree to be bound by these Terms of Service.
                             If you do not agree to these terms, please do not use the service.
                         </p>
                     </section>
@@ -36,7 +36,7 @@ export default function TermsPage() {
                     <section>
                         <h2 className="font-display font-bold text-xl uppercase mb-2 border-b-2 border-ink pb-2">Service Description</h2>
                         <p className="text-sm leading-relaxed">
-                            The Daily Brief is an AI-powered news aggregation and summarization platform. We curate
+                            NutShell is an AI-powered news aggregation and summarization platform. We curate
                             articles from public RSS feeds and generate AI summaries using Google Gemini. The service
                             includes personalized feeds, weekly quizzes, and gamification features.
                         </p>
@@ -62,7 +62,7 @@ export default function TermsPage() {
                     <section>
                         <h2 className="font-display font-bold text-xl uppercase mb-2 border-b-2 border-ink pb-2">Limitation of Liability</h2>
                         <p className="text-sm leading-relaxed">
-                            The Daily Brief is provided &quot;as is&quot; without warranties of any kind. We are not
+                            NutShell is provided &quot;as is&quot; without warranties of any kind. We are not
                             liable for the accuracy of AI-generated content or any decisions made based on
                             information provided by the service.
                         </p>

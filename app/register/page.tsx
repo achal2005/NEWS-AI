@@ -42,7 +42,7 @@ export default function RegisterPage() {
                     {/* Header */}
                     <div className="bg-ink border-b-3 border-ink p-8 text-center">
                         <Link href="/" className="inline-block">
-                            <h1 className="font-display font-black text-4xl md:text-5xl tracking-tight text-primary">THE DAILY BRIEF</h1>
+                            <h1 className="font-display font-black text-4xl md:text-5xl tracking-tight text-primary">NUTSHELL</h1>
                         </Link>
                         <p className="font-mono text-xs mt-2 uppercase tracking-widest text-primary/70">
                             Join The Intelligence Network

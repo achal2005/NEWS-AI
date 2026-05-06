@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Space_Grotesk, Space_Mono, Noto_Serif_Display } from 'next/font/google'
+import { Space_Grotesk, Space_Mono, Epilogue } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/lib/auth'
 import { QueryProvider } from '@/components/QueryProvider'
@@ -21,19 +21,19 @@ const spaceMono = Space_Mono({
     weight: ['400', '700'],
 })
 
-const notoSerifDisplay = Noto_Serif_Display({
+const epilogue = Epilogue({
     subsets: ['latin'],
-    variable: '--font-noto-serif',
+    variable: '--font-epilogue',
     display: 'swap',
-    weight: ['400', '500', '700', '900'],
+    weight: ['300', '400', '500', '600', '700', '800', '900'],
 })
 
 export const metadata: Metadata = {
-    title: 'THE DAILY BRIEF',
+    title: 'NUTSHELL',
     description: 'AI-powered news ecosystem with a neo-zine brutalist interface. Curated intelligence, gamified reading, and personalized summaries.',
     keywords: 'AI, news, zine, brutalist, intelligence, summaries, curated',
     openGraph: {
-        title: 'THE DAILY BRIEF',
+        title: 'NUTSHELL',
         description: 'AI-powered news with a neo-zine brutalist interface',
         type: 'website',
     },
@@ -45,13 +45,13 @@ export default function RootLayout({
     children: React.ReactNode
 }) {
     return (
-        <html lang="en" suppressHydrationWarning className={`${spaceGrotesk.variable} ${spaceMono.variable} ${notoSerifDisplay.variable}`}>
+        <html lang="en" suppressHydrationWarning className={`${spaceGrotesk.variable} ${spaceMono.variable} ${epilogue.variable}`}>
             <head>
                 <link rel="preconnect" href="https://fonts.googleapis.com" />
                 <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
                 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
             </head>
-            <body className="min-h-screen font-mono bg-canvas text-ink antialiased selection:bg-highlight selection:text-ink">
+            <body className="min-h-screen font-sans bg-canvas text-ink antialiased selection:bg-highlight selection:text-ink">
                 {/* Noise texture overlay */}
                 <div className="noise-overlay" />
                 <AuthProvider>

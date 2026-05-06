@@ -34,7 +34,7 @@ const SCENES = [
                 </span>
             </>
         ),
-        description: 'The Daily Brief is an AI-powered news reader that summarizes articles, quizzes you weekly, and personalizes your feed.',
+        description: 'NutShell is an AI-powered news reader that summarizes articles, quizzes you weekly, and personalizes your feed.',
         cta: { text: 'START READING →', href: '/register' },
     },
     {
@@ -159,7 +159,7 @@ export default function LandingPage() {
                     <div className="flex items-center justify-between p-3">
                         <div className="flex items-center gap-2 -rotate-1 bg-primary border-3 border-ink p-1.5 shadow-[4px_4px_0px_#121212]">
                             <span className="material-symbols-outlined font-black text-lg text-white">newspaper</span>
-                            <h1 className="text-base font-display font-black uppercase tracking-tighter text-white">THE DAILY BRIEF</h1>
+                            <h1 className="text-base font-display font-black uppercase tracking-tighter text-white">NUTSHELL</h1>
                         </div>
                         <div className="flex items-center gap-2">
                             <Link href="/register" className="bg-ink text-primary px-3 py-1.5 shadow-[3px_3px_0px_#E02020] font-black text-[10px] uppercase">
@@ -194,7 +194,7 @@ export default function LandingPage() {
                         Your news, <br />but smarter.
                     </h2>
                     <p className="text-sm font-bold leading-snug bg-white/60 p-3 -rotate-1 border-l-4 border-primary mb-6">
-                        The Daily Brief is an AI-powered news reader that summarizes articles, quizzes you weekly, and personalizes your feed.
+                        NutShell is an AI-powered news reader that summarizes articles, quizzes you weekly, and personalizes your feed.
                     </p>
 
                     {/* Mock App Preview */}
@@ -317,14 +317,14 @@ export default function LandingPage() {
                     <div className="flex flex-col gap-3">
                         <div className="flex items-center justify-between">
                             <div className="bg-primary px-2 py-0.5 -rotate-1 border-2 border-ink font-display font-black text-xs uppercase text-white">
-                                THE DAILY BRIEF v1.0
+                                NUTSHELL v1.0
                             </div>
                             <div className="bg-ink text-primary px-2 py-0.5 text-[9px] font-bold">
                                 EST. 2026
                             </div>
                         </div>
                         <div className="flex items-center gap-4 font-mono text-[10px] text-ink/40">
-                            <span>© 2026 The Daily Brief</span>
+                            <span>© 2026 NutShell</span>
                             <Link href="/privacy" className="underline hover:text-ink transition-colors">Privacy</Link>
                             <Link href="/terms" className="underline hover:text-ink transition-colors">Terms</Link>
                         </div>
@@ -355,7 +355,7 @@ export default function LandingPage() {
             <header className="flex items-center justify-between p-4 md:p-6 z-50 relative">
                 <div className="flex items-center gap-2 -rotate-2 bg-primary border-4 border-ink p-2 shadow-[6px_6px_0px_#121212]">
                     <span className="material-symbols-outlined font-black text-xl md:text-2xl text-white">newspaper</span>
-                    <h1 className="text-xl md:text-2xl font-display font-black uppercase tracking-tighter text-white">THE DAILY BRIEF</h1>
+                    <h1 className="text-xl md:text-2xl font-display font-black uppercase tracking-tighter text-white">NUTSHELL</h1>
                 </div>
                 <div className="flex items-center gap-3 md:gap-4">
                     <nav className="hidden md:flex gap-3 font-bold uppercase text-[10px]">
@@ -555,13 +555,13 @@ export default function LandingPage() {
             <footer className="p-4 md:p-5 border-t-4 border-ink bg-canvas z-50 relative flex flex-wrap justify-between items-center gap-2">
                 <div className="flex items-center gap-3 md:gap-4">
                     <div className="bg-primary px-2 py-0.5 -rotate-2 border-2 border-ink font-display font-black text-xs uppercase text-white">
-                        THE DAILY BRIEF v1.0
+                        NUTSHELL v1.0
                     </div>
                     <p className="text-[9px] md:text-[10px] opacity-40 hidden sm:block">Built with Next.js, FastAPI &amp; Gemini AI. Powered by open RSS feeds.</p>
                 </div>
                 <div className="flex items-center gap-3 md:gap-4">
                     <div className="flex items-center gap-3 font-mono text-[9px] md:text-[10px] text-ink/40">
-                        <span>© 2026 The Daily Brief</span>
+                        <span>© 2026 NutShell</span>
                         <Link href="/privacy" className="underline hover:text-ink transition-colors">Privacy</Link>
                         <Link href="/terms" className="underline hover:text-ink transition-colors">Terms</Link>
                     </div>

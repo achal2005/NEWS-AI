@@ -8,6 +8,7 @@ const NAV_ITEMS = [
     { href: '/dashboard', icon: 'newspaper', label: 'TODAY' },
     { href: '/leaderboard', icon: 'trophy', label: 'ROSTER' },
     { href: '/quiz', icon: 'bolt', label: 'QUIZ' },
+    { href: '/globe', icon: 'public', label: 'GLOBE' },
     { href: '/profile', icon: 'settings_b_roll', label: 'SYSTEM' },
 ]
 
@@ -24,7 +25,7 @@ export function Sidebar() {
                 {/* Brand Header */}
                 <div className="p-6 pb-8 border-b-3 border-ink bg-primary flex flex-col justify-between items-start">
                     <h1 className="font-display text-4xl leading-none tracking-tight text-ink uppercase font-black">
-                        THE DAILY BRIEF
+                        NUTSHELL
                     </h1>
                     <div className="mt-2 inline-flex items-center gap-2 border-2 border-ink bg-white px-2 py-0.5 shadow-hard-sm">
                         <span className="w-2 h-2 rounded-full bg-alert animate-pulse" />

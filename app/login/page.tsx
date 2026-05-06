@@ -94,7 +94,7 @@ export default function LoginPage() {
                     {/* Header */}
                     <div className="bg-primary border-b-3 border-ink p-8 text-center">
                         <Link href="/" className="inline-block">
-                            <h1 className="font-display font-black text-4xl md:text-5xl tracking-tight">THE DAILY BRIEF</h1>
+                            <h1 className="font-display font-black text-4xl md:text-5xl tracking-tight">NUTSHELL</h1>
                         </Link>
                         <p className="font-mono text-xs mt-2 uppercase tracking-widest text-ink/60">Welcome back — log in to continue</p>
                     </div>

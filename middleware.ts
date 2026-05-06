@@ -17,7 +17,7 @@ import type { NextRequest } from 'next/server'
  * - Let protected paths through (client-side auth will handle redirection)
  */
 
-const PROTECTED_PREFIXES = ['/dashboard', '/article', '/quiz', '/leaderboard', '/profile', '/onboarding', '/globe']
+const PROTECTED_PREFIXES = ['/dashboard', '/article', '/quiz', '/leaderboard', '/profile', '/onboarding']
 const PUBLIC_PATHS = ['/', '/login', '/register', '/privacy', '/terms']
 const PUBLIC_PREFIXES = ['/auth', '/_next', '/favicon', '/api']
 

@@ -8,7 +8,6 @@ const NAV_ITEMS = [
     { href: '/dashboard', icon: 'newspaper', label: 'TODAY' },
     { href: '/leaderboard', icon: 'trophy', label: 'ROSTER' },
     { href: '/quiz', icon: 'bolt', label: 'QUIZ' },
-    { href: '/globe', icon: 'public', label: 'GLOBE' },
     { href: '/profile', icon: 'settings_b_roll', label: 'SYSTEM' },
 ]
 

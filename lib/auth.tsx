@@ -23,7 +23,6 @@ interface User {
 
 interface AuthContextType {
     user: User | null
-    token: string | null
     isLoading: boolean
     isAuthenticated: boolean
     login: (code: string) => Promise<{ profileComplete: boolean }>
@@ -33,80 +32,72 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-/** Set a cookie (used by edge middleware to check auth). */
-function setTokenCookie(token: string) {
-    document.cookie = `token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
+const API_URL = process.env.NEXT_PUBLIC_API_URL
+
+/**
+ * Set a lightweight cookie for edge middleware auth checks only.
+ * This cookie contains ONLY a flag, NOT the actual JWT token.
+ * The real JWT lives in the HttpOnly cookie set by the backend.
+ */
+function setAuthFlagCookie() {
+    document.cookie = `token=authenticated; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`
 }
 
-/** Clear the token cookie. */
-function clearTokenCookie() {
+/** Clear the auth flag cookie. */
+function clearAuthFlagCookie() {
     document.cookie = 'token=; path=/; max-age=0; SameSite=Lax'
 }
 
-/** Read the token from the cookie. */
-function getTokenFromCookie(): string | null {
-    if (typeof document === 'undefined') return null
-    const match = document.cookie.match(/(?:^|;\s*)token=([^;]*)/)
-    return match ? decodeURIComponent(match[1]) : null
+/** Check if the auth flag cookie exists. */
+function hasAuthFlagCookie(): boolean {
+    if (typeof document === 'undefined') return false
+    return document.cookie.includes('token=authenticated')
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
-    const [token, setToken] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const router = useRouter()
 
-    const fetchUser = useCallback(async (authToken: string) => {
+    const fetchUser = useCallback(async () => {
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
-                headers: {
-                    'Authorization': `Bearer ${authToken}`
-                }
+            // FIX #2: Use credentials: 'include' so the HttpOnly cookie is sent
+            // No Bearer header needed — backend reads JWT from cookie
+            const res = await fetch(`${API_URL}/api/auth/me`, {
+                credentials: 'include',
             })
 
             if (res.ok) {
                 const userData = await res.json()
                 setUser(userData)
+                setAuthFlagCookie()
             } else {
-                // Token invalid or expired — clear user state
+                // Token invalid or expired — clear state
                 setUser(null)
-                setToken(null)
-                clearTokenCookie()
-                localStorage.removeItem('token')
+                clearAuthFlagCookie()
             }
         } catch (error) {
             console.error('Failed to fetch user:', error)
             setUser(null)
-            setToken(null)
         } finally {
             setIsLoading(false)
         }
     }, [])
 
     useEffect(() => {
-        // On mount, check for token in localStorage (or cookie)
-        const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-        const cookieToken = getTokenFromCookie()
-        const activeToken = storedToken || cookieToken
-
-        if (activeToken) {
-            setToken(activeToken)
-            // Ensure both storages have it
-            if (!storedToken) localStorage.setItem('token', activeToken)
-            if (!cookieToken) setTokenCookie(activeToken)
-            
-            fetchUser(activeToken)
+        // On mount, try to fetch user using HttpOnly cookie
+        if (hasAuthFlagCookie()) {
+            fetchUser()
         } else {
             setIsLoading(false)
         }
     }, [fetchUser])
 
     const login = async (code: string): Promise<{ profileComplete: boolean }> => {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/google/callback`, {
+        const res = await fetch(`${API_URL}/api/auth/google/callback`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',  // Receive HttpOnly cookie from backend
             body: JSON.stringify({ code })
         })
 
@@ -115,37 +106,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         const data = await res.json()
-        const authToken = data.access_token
 
-        // Store the token
-        localStorage.setItem('token', authToken)
-        setTokenCookie(authToken)
-        setToken(authToken)
+        // FIX #2: Do NOT store the JWT in localStorage or JS-accessible cookie.
+        // The backend already set an HttpOnly cookie. We only set a flag for middleware.
+        setAuthFlagCookie()
 
-        await fetchUser(authToken)
+        await fetchUser()
 
         return { profileComplete: data.profile_complete ?? false }
     }
 
     const logout = async () => {
-        // We only clear client-side state now, since backend relies on Authorization header
-        clearTokenCookie()
-        localStorage.removeItem('token')
+        // R20: Synchronous cleanup order — clear state first, then backend, then redirect
+        clearAuthFlagCookie()
         setUser(null)
-        setToken(null)
-        router.push('/')
+
+        // Call backend to clear HttpOnly cookie
+        try {
+            await fetch(`${API_URL}/api/auth/logout`, {
+                method: 'POST',
+                credentials: 'include',
+            })
+        } catch {}
+
+        // R20: Use replace to force middleware re-evaluation (prevents back-button issues)
+        router.replace('/')
     }
 
     const refreshUser = async () => {
-        if (token) {
-            await fetchUser(token)
-        }
+        await fetchUser()
     }
 
     return (
         <AuthContext.Provider value={{
             user,
-            token,
             isLoading,
             isAuthenticated: !!user,
             login,

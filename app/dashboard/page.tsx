@@ -44,7 +44,7 @@ function getGridClass(index: number) {
 const PAGE_SIZE = 20
 
 export default function DashboardPage() {
-    const { isAuthenticated, token } = useAuth()
+    const { isAuthenticated } = useAuth()
     const loadMoreRef = useRef<HTMLDivElement>(null)
 
     // ── Infinite Query for article feed ──
@@ -58,14 +58,11 @@ export default function DashboardPage() {
         error,
         refetch,
     } = useInfiniteQuery({
-        queryKey: ['articles', isAuthenticated, token],
+        queryKey: ['articles', isAuthenticated],
         queryFn: async ({ pageParam = 1 }) => {
-            const headers: Record<string, string> = {}
-            if (token) headers['Authorization'] = `Bearer ${token}`
-            
             const res = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/api/news?page=${pageParam}&page_size=${PAGE_SIZE}`,
-                { cache: 'no-store', headers }
+                { cache: 'no-store', credentials: 'include' }
             )
             if (!res.ok) throw new Error(`API error: ${res.status}`)
             return res.json()
@@ -113,12 +110,9 @@ export default function DashboardPage() {
     const refreshArticles = async () => {
         setRefreshing(true)
         try {
-            const headers: Record<string, string> = {}
-            if (token) headers['Authorization'] = `Bearer ${token}`
-            
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/news/refresh`, {
                 cache: 'no-store',
-                headers,
+                credentials: 'include',
             })
             if (res.ok) {
                 refetch()

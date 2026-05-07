@@ -14,7 +14,7 @@ interface LeaderboardEntry {
 }
 
 export default function LeaderboardPage() {
-    const { user, token } = useAuth()
+    const { user } = useAuth()
     const [entries, setEntries] = useState<LeaderboardEntry[]>([])
     const [loading, setLoading] = useState(true)
     const [userRank, setUserRank] = useState<LeaderboardEntry | null>(null)
@@ -22,11 +22,8 @@ export default function LeaderboardPage() {
     useEffect(() => {
         const fetchLeaderboard = async () => {
             try {
-                const headers: Record<string, string> = {}
-                if (token) headers['Authorization'] = `Bearer ${token}`
-                
                 const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/leaderboard`, {
-                    headers,
+                    credentials: 'include',
                     cache: 'no-store',
                 })
                 if (res.ok) {

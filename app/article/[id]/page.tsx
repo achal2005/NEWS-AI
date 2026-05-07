@@ -25,7 +25,7 @@ interface JargonTerm {
 
 export default function ArticlePage() {
     const params = useParams()
-    const { isAuthenticated, token } = useAuth()
+    const { isAuthenticated } = useAuth()
     const articleId = params.id as string
     const lastFetchedModeRef = useRef<string | null>(null)
 
@@ -66,10 +66,8 @@ export default function ArticlePage() {
                 const url = `${process.env.NEXT_PUBLIC_API_URL}/api/user/reading-time`
                 fetch(url, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                    },
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: payload,
                     keepalive: true,
                 }).catch(() => { })
@@ -113,7 +111,7 @@ export default function ArticlePage() {
             const res = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/api/news/${articleId}/summary?mode=${mode}`,
                 {
-                    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+                    credentials: 'include',
                     cache: 'no-store'
                 }
             )
@@ -152,7 +150,7 @@ export default function ArticlePage() {
                 `${process.env.NEXT_PUBLIC_API_URL}/api/news/${articleId}/regenerate-summary?mode=${summaryMode}`,
                 {
                     method: 'POST',
-                    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+                    credentials: 'include',
                     cache: 'no-store',
                 }
             )

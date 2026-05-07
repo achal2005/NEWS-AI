@@ -28,7 +28,7 @@ interface QuizListItem {
 }
 
 export default function QuizPage() {
-    const { isAuthenticated, token } = useAuth()
+    const { isAuthenticated } = useAuth()
     const [quizzes, setQuizzes] = useState<QuizListItem[]>([])
     const [activeQuiz, setActiveQuiz] = useState<Quiz | null>(null)
     const [currentQ, setCurrentQ] = useState(0)
@@ -44,14 +44,11 @@ export default function QuizPage() {
     useEffect(() => {
         const fetchQuizzes = async () => {
             try {
-                const headers: Record<string, string> = {}
-                if (token) headers['Authorization'] = `Bearer ${token}`
-
                 // Ensure a weekly quiz exists (auto-generates if none)
-                await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz/weekly`, { cache: 'no-store', headers })
+                await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz/weekly`, { cache: 'no-store', credentials: 'include' })
 
                 // Now list all available quizzes
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz/list`, { cache: 'no-store', headers })
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz/list`, { cache: 'no-store', credentials: 'include' })
                 if (res.ok) {
                     const data = await res.json()
                     setQuizzes(data.quizzes || data || [])
@@ -67,10 +64,7 @@ export default function QuizPage() {
 
     const startQuiz = useCallback(async (quizId: string) => {
         try {
-            const headers: Record<string, string> = {}
-            if (token) headers['Authorization'] = `Bearer ${token}`
-            
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz/${quizId}`, { cache: 'no-store', headers })
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz/${quizId}`, { cache: 'no-store', credentials: 'include' })
             if (res.ok) {
                 const data = await res.json()
                 setActiveQuiz(data)
@@ -122,14 +116,10 @@ export default function QuizPage() {
         if (!isAuthenticated || !activeQuiz) return
         setSubmitting(true)
         try {
-            const headers: Record<string, string> = {
-                'Content-Type': 'application/json',
-            }
-            if (token) headers['Authorization'] = `Bearer ${token}`
-
             await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz/submit`, {
                 method: 'POST',
-                headers,
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({
                     quiz_id: activeQuiz.id,
                     answers,

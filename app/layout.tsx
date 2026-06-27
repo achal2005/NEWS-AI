@@ -29,6 +29,7 @@ const epilogue = Epilogue({
 })
 
 export const metadata: Metadata = {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
     title: 'NUTSHELL',
     description: 'AI-powered news ecosystem with a neo-zine brutalist interface. Curated intelligence, gamified reading, and personalized summaries.',
     keywords: 'AI, news, zine, brutalist, intelligence, summaries, curated',

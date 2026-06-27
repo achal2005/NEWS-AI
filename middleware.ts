@@ -32,34 +32,12 @@ export function middleware(request: NextRequest) {
     const isProtected = PROTECTED_PREFIXES.some(p => pathname.startsWith(p))
     if (!isProtected) return NextResponse.next()
 
-    // Read the client-side set cookie
-    const token = request.cookies.get('token')?.value
-
-    if (!token) {
-        // Redirect to landing page
-        const loginUrl = new URL('/', request.url)
-        return NextResponse.redirect(loginUrl)
-    }
-
-    // Validate JWT expiry (decode payload without signature verification — safe at edge)
-    try {
-        const [, payloadB64] = token.split('.')
-        if (payloadB64) {
-            // Handle base64url encoding (replace - with + and _ with /)
-            const base64 = payloadB64.replace(/-/g, '+').replace(/_/g, '/')
-            const payload = JSON.parse(atob(base64))
-            if (payload.exp && payload.exp * 1000 < Date.now()) {
-                // Token expired — clear cookie and redirect
-                const response = NextResponse.redirect(new URL('/', request.url))
-                response.cookies.delete('token')
-                return response
-            }
-        }
-    } catch {
-        // Malformed token — clear and redirect
-        const response = NextResponse.redirect(new URL('/', request.url))
-        response.cookies.delete('token')
-        return response
+    // Lightweight presence check of the client-side flag cookie.
+    // This is NOT the JWT (which lives in a cross-domain HttpOnly cookie the edge
+    // cannot read). Real auth is enforced server-side by AuthProvider → /api/auth/me.
+    const flag = request.cookies.get('token')?.value
+    if (!flag) {
+        return NextResponse.redirect(new URL('/', request.url))
     }
 
     return NextResponse.next()

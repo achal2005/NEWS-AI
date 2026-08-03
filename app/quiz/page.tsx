@@ -45,10 +45,10 @@ export default function QuizPage() {
         const fetchQuizzes = async () => {
             try {
                 // Ensure a weekly quiz exists (auto-generates if none)
-                await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz/weekly`, { cache: 'no-store', credentials: 'include' })
+                await fetch(`/api/quiz/weekly`, { cache: 'no-store', credentials: 'include' })
 
                 // Now list all available quizzes
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz/list`, { cache: 'no-store', credentials: 'include' })
+                const res = await fetch(`/api/quiz/list`, { cache: 'no-store', credentials: 'include' })
                 if (res.ok) {
                     const data = await res.json()
                     setQuizzes(data.quizzes || data || [])
@@ -64,7 +64,7 @@ export default function QuizPage() {
 
     const startQuiz = useCallback(async (quizId: string) => {
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz/${quizId}`, { cache: 'no-store', credentials: 'include' })
+            const res = await fetch(`/api/quiz/${quizId}`, { cache: 'no-store', credentials: 'include' })
             if (res.ok) {
                 const data = await res.json()
                 setActiveQuiz(data)
@@ -116,7 +116,7 @@ export default function QuizPage() {
         if (!isAuthenticated || !activeQuiz) return
         setSubmitting(true)
         try {
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz/submit`, {
+            await fetch(`/api/quiz/submit`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',

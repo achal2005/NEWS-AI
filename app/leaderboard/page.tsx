@@ -22,7 +22,7 @@ export default function LeaderboardPage() {
     useEffect(() => {
         const fetchLeaderboard = async () => {
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/leaderboard`, {
+                const res = await fetch(`/api/leaderboard`, {
                     credentials: 'include',
                     cache: 'no-store',
                 })

@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 
 // Pre-warm backend on landing (wakes Render before user navigates to login)
 if (typeof window !== 'undefined') {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/health`, { cache: 'no-store' }).catch(() => { })
+    fetch(`/health`, { cache: 'no-store' }).catch(() => { })
 }
 
 /* ── Sample summaries for the interactive demo ── */

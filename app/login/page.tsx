@@ -20,7 +20,7 @@ export default function LoginPage() {
         }, 10000)
 
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/health`, { cache: 'no-store' })
+            const res = await fetch(`/health`, { cache: 'no-store' })
             if (res.ok) {
                 if (timeoutRef.current) clearTimeout(timeoutRef.current)
                 setServerStatus('ready')
@@ -34,7 +34,7 @@ export default function LoginPage() {
         await new Promise((r) => setTimeout(r, 2000))
 
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/health`, { cache: 'no-store' })
+            const res = await fetch(`/health`, { cache: 'no-store' })
             if (res.ok) {
                 if (timeoutRef.current) clearTimeout(timeoutRef.current)
                 setServerStatus('ready')
@@ -60,7 +60,7 @@ export default function LoginPage() {
         setLoading(true)
         setAuthError(null)
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/google`)
+            const res = await fetch(`/api/auth/google`)
             if (res.ok) {
                 const data = await res.json()
                 window.location.href = data.auth_url

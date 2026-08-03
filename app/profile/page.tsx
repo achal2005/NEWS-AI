@@ -45,7 +45,7 @@ export default function ProfilePage() {
 
         const fetchProfile = async () => {
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/profile`, {
+                const res = await fetch(`/api/user/profile`, {
                     credentials: 'include',
                     cache: 'no-store',
                 })
@@ -79,7 +79,7 @@ export default function ProfilePage() {
         const depthToSave = currentDepth !== undefined ? currentDepth : depthPreference
 
         try {
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/profile`, {
+            await fetch(`/api/user/profile`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

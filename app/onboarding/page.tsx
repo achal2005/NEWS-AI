@@ -42,7 +42,7 @@ export default function OnboardingPage() {
         if (!isAuthenticated) { router.push('/dashboard'); return }
         setSaving(true)
         try {
-            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/user/profile`, {
+            await fetch(`/api/user/profile`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

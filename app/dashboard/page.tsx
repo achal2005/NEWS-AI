@@ -61,7 +61,7 @@ export default function DashboardPage() {
         queryKey: ['articles', isAuthenticated],
         queryFn: async ({ pageParam = 1 }) => {
             const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/api/news?page=${pageParam}&page_size=${PAGE_SIZE}`,
+                `/api/news?page=${pageParam}&page_size=${PAGE_SIZE}`,
                 { cache: 'no-store', credentials: 'include' }
             )
             if (!res.ok) throw new Error(`API error: ${res.status}`)
@@ -110,7 +110,7 @@ export default function DashboardPage() {
     const refreshArticles = async () => {
         setRefreshing(true)
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/news/refresh`, {
+            const res = await fetch(`/api/news/refresh`, {
                 cache: 'no-store',
                 credentials: 'include',
             })

@@ -23,7 +23,7 @@ export function NewsTicker({ headlines: propHeadlines }: NewsTickerProps) {
 
         const fetchHeadlines = async () => {
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/news?page_size=10`, {
+                const res = await fetch(`/api/news?page_size=10`, {
                     cache: 'no-store'
                 })
                 if (res.ok) {

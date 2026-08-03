@@ -63,7 +63,7 @@ export default function ArticlePage() {
                 pointsAwardedRef.current = true
                 // Fire-and-forget POST with keepalive for reliability on page leave
                 const payload = JSON.stringify({ article_id: articleId, seconds: elapsed })
-                const url = `${process.env.NEXT_PUBLIC_API_URL}/api/user/reading-time`
+                const url = `/api/user/reading-time`
                 fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -88,7 +88,7 @@ export default function ArticlePage() {
 
     const fetchArticle = useCallback(async () => {
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/news/${articleId}`, { cache: 'no-store' })
+            const res = await fetch(`/api/news/${articleId}`, { cache: 'no-store' })
             if (res.ok) {
                 setArticle(await res.json())
             }
@@ -109,7 +109,7 @@ export default function ArticlePage() {
         setSummaryError(null)
         try {
             const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/api/news/${articleId}/summary?mode=${mode}`,
+                `/api/news/${articleId}/summary?mode=${mode}`,
                 {
                     credentials: 'include',
                     cache: 'no-store'
@@ -147,7 +147,7 @@ export default function ArticlePage() {
         setSummaryError(null)
         try {
             const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/api/news/${articleId}/regenerate-summary?mode=${summaryMode}`,
+                `/api/news/${articleId}/regenerate-summary?mode=${summaryMode}`,
                 {
                     method: 'POST',
                     credentials: 'include',

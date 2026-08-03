@@ -11,7 +11,7 @@ export default function RegisterPage() {
         setLoading(true)
         setAuthError(null)
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/google`)
+            const res = await fetch(`/api/auth/google`)
             if (res.ok) {
                 const data = await res.json()
                 window.location.href = data.auth_url

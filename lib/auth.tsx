@@ -32,7 +32,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL
+// Same-origin: the backend is reached through Next.js rewrites (see next.config.js),
+// which makes the auth cookie first-party. Empty base → relative '/api/...' URLs.
+const API_URL = ''
 
 /**
  * Set a lightweight cookie for edge middleware auth checks only.

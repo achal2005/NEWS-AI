@@ -5,10 +5,10 @@ import { usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/auth'
 
 const NAV_ITEMS = [
-    { href: '/dashboard', icon: 'newspaper', label: 'TODAY' },
-    { href: '/leaderboard', icon: 'trophy', label: 'ROSTER' },
-    { href: '/quiz', icon: 'bolt', label: 'QUIZ' },
-    { href: '/profile', icon: 'settings_b_roll', label: 'SYSTEM' },
+    { href: '/dashboard', icon: 'newspaper', label: 'Today', tag: 'ED.01' },
+    { href: '/leaderboard', icon: 'trophy', label: 'Roster', tag: 'ED.02' },
+    { href: '/quiz', icon: 'bolt', label: 'Quiz', tag: 'ED.03' },
+    { href: '/profile', icon: 'settings_b_roll', label: 'System', tag: 'ED.04' },
 ]
 
 export function Sidebar() {
@@ -17,116 +17,110 @@ export function Sidebar() {
 
     return (
         <>
-            {/* Desktop Sidebar */}
-            <aside className="hidden md:flex w-[280px] fixed h-screen border-r-3 border-ink flex-col bg-paper-grey z-10 overflow-x-hidden"
-                style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E\")" }}
-            >
-                {/* Brand Header */}
-                <div className="p-6 pb-8 border-b-3 border-ink bg-primary flex flex-col justify-between items-start">
-                    <h1 className="font-display text-4xl leading-none tracking-tight text-ink uppercase font-black">
-                        NUTSHELL
+            {/* ── Desktop Sidebar ── */}
+            <aside className="hidden md:flex w-[280px] fixed h-screen border-r-2 border-ink flex-col bg-paper-grey z-10 overflow-x-hidden paper-grain">
+                {/* Masthead */}
+                <div className="px-6 pt-7 pb-6 border-b-2 border-ink">
+                    <p className="font-mono text-[10px] tracking-[0.3em] text-ink/45 uppercase mb-1.5">
+                        The AI Daily
+                    </p>
+                    <h1 className="font-display font-black text-[2.9rem] leading-[0.82] tracking-tight">
+                        Nut<span className="text-primary">shell</span>
                     </h1>
-                    <div className="mt-2 inline-flex items-center gap-2 border-2 border-ink bg-white px-2 py-0.5 shadow-hard-sm">
-                        <span className="w-2 h-2 rounded-full bg-alert animate-pulse" />
-                        <span className="text-[10px] font-bold tracking-wider">ONLINE</span>
+                    <div className="mt-3 inline-flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse" />
+                        <span className="font-mono text-[10px] font-bold tracking-[0.2em] text-ink/55 uppercase">Press running</span>
                     </div>
                 </div>
 
-                {/* Navigation Stack */}
-                <nav className="flex-1 flex flex-col py-6 gap-3 overflow-y-auto">
-                    {NAV_ITEMS.map((item) => {
-                        const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
-
-                        if (isActive) {
-                            return (
-                                <div key={item.href} className="group relative pl-4 pr-0">
-                                    {/* Connector hides border */}
-                                    <div className="absolute right-[-3px] top-0 bottom-0 w-[4px] bg-canvas z-30" />
-                                    <Link
-                                        href={item.href}
-                                        className="relative z-20 flex items-center justify-between w-full p-4 bg-canvas border-y-3 border-l-3 border-r-0 border-ink shadow-[-4px_4px_0px_0px_#121212] translate-x-[3px] transition-transform"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <span className="material-symbols-outlined text-[28px] font-bold"
-                                                style={{ fontVariationSettings: "'FILL' 1, 'wght' 700" }}>
-                                                {item.icon}
-                                            </span>
-                                            <span className="font-sans font-bold text-lg tracking-wide">{item.label}</span>
-                                        </div>
-                                        <div className="w-3 h-3 bg-primary border-2 border-ink rounded-full mr-4" />
-                                    </Link>
-                                </div>
-                            )
-                        }
-
-                        return (
-                            <div key={item.href} className="group px-4">
-                                <Link
-                                    href={item.href}
-                                    className="flex items-center gap-3 w-full p-3 bg-white border-3 border-ink shadow-hard transition-all duration-200 hover:-translate-y-1 hover:shadow-hard-hover hover:bg-primary/20"
-                                >
-                                    <span className="material-symbols-outlined text-[24px]"
-                                        style={{ fontVariationSettings: "'FILL' 0, 'wght' 500" }}>
-                                        {item.icon}
-                                    </span>
-                                    <span className="font-sans font-bold text-lg text-ink/80 group-hover:text-ink">{item.label}</span>
-                                </Link>
-                            </div>
-                        )
-                    })}
-                </nav>
-
-                {/* User Profile Footer */}
-                <div className="mt-auto p-4 border-t-3 border-ink bg-white">
-                    {user ? (
-                        <div className="flex items-center gap-3 mb-4 p-2 bg-paper-grey border-2 border-ink border-dashed">
-                            <div className="w-10 h-10 bg-cool border-2 border-ink flex items-center justify-center text-white font-bold">
-                                {user.display_name?.charAt(0)?.toUpperCase() || 'U'}
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="font-sans font-bold text-sm leading-tight truncate max-w-[140px]">
-                                    {user.display_name || 'READER'}
-                                </span>
-                                <span className="font-mono text-[10px] text-ink/60">LVL 4. INTELLECT</span>
-                            </div>
-                        </div>
-                    ) : null}
-                    <div className="flex justify-between items-end">
-                        <p className="font-mono text-[10px] text-ink/50 uppercase tracking-widest">
-                            V 1.0.4 [BETA]
-                        </p>
-                        {user ? (
-                            <button
-                                onClick={logout}
-                                className="w-8 h-8 flex items-center justify-center border-2 border-ink bg-canvas hover:bg-alert hover:text-white transition-colors shadow-hard-sm"
-                                title="Sign Out"
-                            >
-                                <span className="material-symbols-outlined text-[18px]">logout</span>
-                            </button>
-                        ) : null}
-                    </div>
-                </div>
-            </aside>
-
-            {/* Mobile Bottom Nav */}
-            <nav className="md:hidden fixed bottom-0 w-full bg-white border-t-3 border-ink z-50">
-                <div className="flex justify-around p-2">
+                {/* Navigation */}
+                <nav className="flex-1 flex flex-col py-5 gap-1 overflow-y-auto">
                     {NAV_ITEMS.map((item) => {
                         const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
                         return (
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className={`flex flex-col items-center p-2 ${isActive ? 'text-ink' : 'text-gray-400 hover:text-ink'}`}
+                                className={`group relative flex items-center gap-3 mx-3 px-4 py-3 border-2 transition-all duration-150 ${isActive
+                                    ? 'bg-ink text-canvas border-ink'
+                                    : 'bg-transparent text-ink border-transparent hover:border-ink hover:bg-surface'
+                                    }`}
                             >
-                                {isActive ? (
-                                    <div className="size-8 bg-primary border-2 border-ink rounded-full flex items-center justify-center -mt-6 shadow-hard-sm">
-                                        <span className="material-symbols-outlined text-[18px]">{item.icon}</span>
-                                    </div>
-                                ) : (
-                                    <span className="material-symbols-outlined">{item.icon}</span>
-                                )}
-                                <span className="text-[10px] font-bold mt-1">{item.label}</span>
+                                {/* active spine */}
+                                <span
+                                    className={`absolute left-0 top-0 bottom-0 w-1.5 bg-secondary transition-opacity ${isActive ? 'opacity-100' : 'opacity-0'
+                                        }`}
+                                />
+                                <span
+                                    className="material-symbols-outlined text-[22px]"
+                                    style={{ fontVariationSettings: `'FILL' ${isActive ? 1 : 0}, 'wght' ${isActive ? 700 : 500}` }}
+                                >
+                                    {item.icon}
+                                </span>
+                                <span className="font-display font-bold text-lg tracking-tight">{item.label}</span>
+                                <span
+                                    className={`ml-auto font-mono text-[9px] tracking-widest ${isActive ? 'text-secondary' : 'text-ink/30'
+                                        }`}
+                                >
+                                    {item.tag}
+                                </span>
+                            </Link>
+                        )
+                    })}
+                </nav>
+
+                {/* User footer */}
+                <div className="mt-auto p-4 border-t-2 border-ink bg-surface">
+                    {user ? (
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 bg-primary border-2 border-ink flex items-center justify-center text-canvas font-display font-black text-lg">
+                                {user.display_name?.charAt(0)?.toUpperCase() || 'U'}
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                                <span className="font-display font-bold text-sm leading-tight truncate max-w-[150px]">
+                                    {user.display_name || 'Reader'}
+                                </span>
+                                <span className="font-mono text-[10px] text-ink/50 tracking-wide">SUBSCRIBER</span>
+                            </div>
+                        </div>
+                    ) : null}
+                    <div className="flex justify-between items-center">
+                        <p className="font-mono text-[10px] text-ink/40 uppercase tracking-widest">
+                            Vol.1 · No.4
+                        </p>
+                        {user ? (
+                            <button
+                                onClick={logout}
+                                className="flex items-center gap-1.5 px-2 py-1 border-2 border-ink bg-canvas font-mono text-[10px] font-bold tracking-wide hover:bg-secondary hover:text-canvas hover:border-ink transition-colors"
+                                title="Sign out"
+                            >
+                                <span className="material-symbols-outlined text-[14px]">logout</span>
+                                OUT
+                            </button>
+                        ) : null}
+                    </div>
+                </div>
+            </aside>
+
+            {/* ── Mobile Bottom Nav ── */}
+            <nav className="md:hidden fixed bottom-0 w-full bg-surface border-t-2 border-ink z-50">
+                <div className="flex justify-around px-2 py-1.5">
+                    {NAV_ITEMS.map((item) => {
+                        const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+                        return (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className={`flex flex-col items-center gap-0.5 px-3 py-1.5 ${isActive ? 'text-ink' : 'text-ink/40'}`}
+                            >
+                                <span
+                                    className="material-symbols-outlined text-[24px]"
+                                    style={{ fontVariationSettings: `'FILL' ${isActive ? 1 : 0}, 'wght' ${isActive ? 700 : 400}` }}
+                                >
+                                    {item.icon}
+                                </span>
+                                <span className="font-mono text-[9px] font-bold tracking-wider uppercase">{item.label}</span>
+                                <span className={`h-0.5 w-5 ${isActive ? 'bg-secondary' : 'bg-transparent'}`} />
                             </Link>
                         )
                     })}

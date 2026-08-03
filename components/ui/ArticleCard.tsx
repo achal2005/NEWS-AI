@@ -18,76 +18,76 @@ interface ArticleCardProps {
 }
 
 export function ArticleCard({ article, index = 0, size = 'normal' }: ArticleCardProps) {
-    // Deterministic dark card: every 5th card (starting from index 4)
+    // Deterministic ink-block card: every 5th card (starting at index 4)
     const isDark = index % 5 === 4
-
+    const isFeatured = size === 'featured'
     const showImage = (size === 'featured' || size === 'tall' || size === 'wide') && article.image_url
+
+    const dateLabel = article.published_at
+        ? new Date(article.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        : 'Recent'
 
     return (
         <Link
             href={`/article/${article.id}`}
-            className={`brutal-card border-3 border-ink flex flex-col justify-between h-full group transition-all animate-fade-in-up opacity-0 relative overflow-hidden ${isDark ? 'bg-ink text-white' : 'bg-white text-ink shadow-hard hover:-translate-y-1 hover:shadow-hard-hover'
+            className={`brutal-card border-2 border-ink flex flex-col h-full group relative overflow-hidden animate-fade-in-up opacity-0 transition-all shadow-hard hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-hard-hover ${isDark ? 'bg-ink text-canvas' : 'bg-surface text-ink'
                 }`}
             style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'forwards' }}
         >
-            {/* Image — lazy-loaded via Next.js Image for performance */}
+            {/* Image */}
             {showImage && (
-                <div className={`${size === 'featured' ? 'h-[240px]' : size === 'wide' ? 'h-[180px]' : 'h-[160px]'} w-full border-b-3 border-ink overflow-hidden bg-gray-200 relative shrink-0`}>
-                    <div className="absolute inset-0 bg-primary opacity-20 mix-blend-multiply z-10 pointer-events-none" />
+                <div className={`${isFeatured ? 'h-[240px]' : size === 'wide' ? 'h-[180px]' : 'h-[160px]'} w-full border-b-2 border-ink overflow-hidden bg-paper-accent relative shrink-0`}>
+                    <div className="absolute inset-0 bg-primary opacity-[0.18] mix-blend-multiply z-10 pointer-events-none" />
                     <Image
                         src={article.image_url!}
                         alt={article.title}
                         fill
-                        sizes={size === 'featured' ? '(max-width: 768px) 100vw, 50vw' : '(max-width: 768px) 100vw, 25vw'}
-                        className="object-cover riso-image group-hover:scale-105 transition-transform duration-500"
+                        sizes={isFeatured ? '(max-width: 768px) 100vw, 50vw' : '(max-width: 768px) 100vw, 25vw'}
+                        className="object-cover riso-image group-hover:scale-[1.04] transition-transform duration-500"
                         loading="lazy"
                         placeholder="empty"
                     />
-                </div>
-            )}
-
-            <div className="flex-1 p-4 sm:p-5 relative z-10">
-                <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-2 sm:mb-3">
-                    <span className={`text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 border-2 ${isDark ? 'bg-primary text-ink border-primary' : 'bg-ink text-white border-ink'}`}>
-                        {article.category?.toUpperCase() || 'NEWS'}
-                    </span>
-                    <span className={`text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 border-2 ${isDark ? 'border-zinc-700 bg-zinc-800' : 'border-ink bg-white'}`}>
-                        {article.source_name || 'SOURCE'}
-                    </span>
-                    {size === 'featured' && (
-                        <span className="text-[10px] sm:text-xs font-bold bg-primary border-2 border-ink px-1.5 sm:px-2 py-0.5 shadow-hard-sm text-ink">
-                            TOP STORY
+                    {isFeatured && (
+                        <span className="absolute top-3 left-3 z-20 font-mono text-[10px] font-bold tracking-widest uppercase bg-secondary text-ink border-2 border-ink px-2 py-0.5">
+                            Top Story
                         </span>
                     )}
                 </div>
-                <h3 className={`font-display font-bold leading-tight mb-2 sm:mb-3 group-hover:underline decoration-3 decoration-primary underline-offset-4 ${size === 'featured' ? 'text-xl sm:text-3xl md:text-4xl' : size === 'wide' || size === 'tall' ? 'text-lg sm:text-xl md:text-2xl' : 'text-base sm:text-lg md:text-xl'
+            )}
+
+            {/* Meta row */}
+            <div className="flex items-center gap-2 px-4 sm:px-5 pt-4">
+                <span className={`font-mono text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 border-2 ${isDark ? 'bg-secondary text-ink border-secondary' : 'bg-primary text-canvas border-ink'}`}>
+                    {article.category?.toUpperCase() || 'NEWS'}
+                </span>
+                <span className={`font-mono text-[10px] tracking-wide truncate ${isDark ? 'text-canvas/50' : 'text-ink/50'}`}>
+                    {article.source_name || 'Source'}
+                </span>
+            </div>
+
+            {/* Headline */}
+            <div className="flex-1 px-4 sm:px-5 pt-2">
+                <h3 className={`font-display font-black leading-[1.02] tracking-tight ${isFeatured ? 'text-2xl sm:text-3xl md:text-4xl' : size === 'wide' || size === 'tall' ? 'text-xl sm:text-2xl' : 'text-lg sm:text-xl'
                     }`}>
-                    {article.title}
+                    <span className="bg-[length:100%_2px] bg-no-repeat bg-bottom bg-gradient-to-r from-secondary to-secondary [background-size:0%_2px] group-hover:[background-size:100%_2px] transition-[background-size] duration-300">
+                        {article.title}
+                    </span>
                 </h3>
-                {/* Show excerpt for featured/wide cards */}
-                {(size === 'featured' || size === 'wide') && article.content && (
-                    <p className={`font-mono text-xs sm:text-sm leading-relaxed line-clamp-2 ${isDark ? 'text-zinc-300' : 'text-gray-600'}`}>
-                        {article.content.substring(0, 150)}...
+                {(isFeatured || size === 'wide') && article.content && (
+                    <p className={`mt-2 font-sans text-sm leading-relaxed line-clamp-2 ${isDark ? 'text-canvas/60' : 'text-ink/55'}`}>
+                        {article.content.substring(0, 150)}…
                     </p>
                 )}
             </div>
 
-            <div className={`px-4 sm:px-5 pb-3 sm:pb-4 mt-auto flex justify-between items-end relative z-10`}>
-                <span className={`font-mono text-[9px] sm:text-[10px] font-bold tracking-widest uppercase ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
-                    {article.published_at ? new Date(article.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'RECENT'}
+            {/* Footer */}
+            <div className="px-4 sm:px-5 py-3 mt-3 flex items-center justify-between border-t-2 border-dashed border-current/20">
+                <span className={`font-mono text-[10px] font-bold tracking-widest uppercase ${isDark ? 'text-canvas/50' : 'text-ink/45'}`}>
+                    {dateLabel}
                 </span>
-
-                {/* Arrow identifier */}
-                <div className={`size-7 sm:size-8 flex items-center justify-center border-2 rounded-full transition-transform group-hover:bg-primary group-hover:text-ink group-hover:border-primary group-hover:rotate-45 ${isDark ? 'border-zinc-700' : 'border-ink'}`}>
-                    <span className="material-symbols-outlined text-sm font-bold">arrow_forward</span>
-                </div>
-            </div>
-
-            {/* Universal Hover Overlay for "READ NOW" — hidden on mobile */}
-            <div className="absolute inset-0 bg-ink/5 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-all duration-300 z-20 flex items-center justify-center pointer-events-none hidden sm:flex">
-                <span className={`text-ink border-3 border-ink shadow-hard font-black px-6 py-3 flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 ${isDark ? 'bg-canvas' : 'bg-primary'}`}>
-                    READ NOW
-                    <span className="material-symbols-outlined text-xl">electric_bolt</span>
+                <span className={`inline-flex items-center gap-1 font-mono text-[10px] font-bold tracking-widest uppercase transition-colors ${isDark ? 'text-canvas/70 group-hover:text-secondary' : 'text-ink/60 group-hover:text-primary'}`}>
+                    Read
+                    <span className="material-symbols-outlined text-sm transition-transform group-hover:translate-x-0.5">arrow_forward</span>
                 </span>
             </div>
         </Link>

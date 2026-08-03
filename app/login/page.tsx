@@ -77,26 +77,21 @@ export default function LoginPage() {
 
     return (
         <div className="min-h-screen bg-canvas flex flex-col items-center justify-center relative overflow-hidden selection:bg-highlight selection:text-ink px-4">
-            {/* Grid background */}
-            <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: 'radial-gradient(#121212 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-
-            {/* Floating decorative elements */}
-            <div className="absolute top-20 left-10 w-48 h-24 bg-primary border-3 border-ink shadow-hard rotate-[-8deg] opacity-20 hidden md:block" />
-            <div className="absolute bottom-32 right-16 w-32 h-32 border-3 border-ink shadow-hard rotate-[12deg] opacity-15 hidden md:block" />
-            <div className="absolute top-40 right-20 w-24 h-16 bg-alert border-3 border-ink shadow-hard rotate-[6deg] opacity-15 hidden md:block" />
+            {/* Newsprint grain */}
+            <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'radial-gradient(#242019 0.5px, transparent 0.6px)', backgroundSize: '4px 4px' }} />
 
             {/* Main Card */}
             <div className="relative z-10 w-full max-w-md animate-fade-in-up opacity-0" style={{ animationDelay: '100ms', animationFillMode: 'forwards' }}>
                 {/* Shadow layer */}
-                <div className="absolute inset-0 translate-x-3 translate-y-3 bg-ink border-3 border-ink" />
+                <div className="absolute inset-0 translate-x-2.5 translate-y-2.5 bg-ink border-2 border-ink" />
 
-                <div className="relative bg-white border-3 border-ink overflow-hidden">
+                <div className="relative bg-surface border-2 border-ink overflow-hidden">
                     {/* Header */}
-                    <div className="bg-primary border-b-3 border-ink p-8 text-center">
+                    <div className="bg-primary border-b-2 border-ink p-8 text-center">
                         <Link href="/" className="inline-block">
-                            <h1 className="font-display font-black text-4xl md:text-5xl tracking-tight">NUTSHELL</h1>
+                            <h1 className="font-display font-black text-5xl md:text-6xl tracking-tight text-canvas">Nutshell</h1>
                         </Link>
-                        <p className="font-mono text-xs mt-2 uppercase tracking-widest text-ink/60">Welcome back — log in to continue</p>
+                        <p className="font-mono text-[11px] mt-2 uppercase tracking-[0.2em] text-canvas/70">Welcome back — sign in to continue</p>
                     </div>
 
                     {/* Content */}
@@ -121,7 +116,7 @@ export default function LoginPage() {
 
                         {/* Auth Error Banner */}
                         {authError && (
-                            <div className="border-3 border-primary bg-primary/5 p-4 flex items-start gap-3">
+                            <div className="border-2 border-primary bg-primary/5 p-4 flex items-start gap-3">
                                 <span className="material-symbols-outlined text-primary text-xl flex-shrink-0 mt-0.5">error</span>
                                 <div className="flex-1">
                                     <p className="font-mono text-sm text-ink/80">{authError}</p>
@@ -139,7 +134,7 @@ export default function LoginPage() {
                         <button
                             onClick={handleGoogleLogin}
                             disabled={loading || serverStatus !== 'ready'}
-                            className="w-full py-4 bg-ink text-white border-3 border-ink font-bold text-base uppercase tracking-wide shadow-hard hover:bg-primary hover:text-ink hover:shadow-hard-hover hover:-translate-y-1 transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-wait"
+                            className="w-full py-4 bg-ink text-white border-2 border-ink font-bold text-base uppercase tracking-wide shadow-hard hover:bg-primary hover:text-ink hover:shadow-hard-hover hover:-translate-y-1 transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-wait"
                         >
                             {loading ? (
                                 <>

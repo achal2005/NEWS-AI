@@ -7,30 +7,34 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: '#00AAEE',
-        'primary-dark': '#0088BB',
-        secondary: '#EC008C',
-        tertiary: '#EA8C21',
-        neutral: '#000000',
-        ink: '#000000',
-        canvas: '#F2F2F2',
-        alert: '#EC008C',
-        cool: '#00AAEE',
-        highlight: '#E2E8F0',
-        'paper-grey': '#F2F2F2',
-        'paper-accent': '#E2E8F0',
+        // ── The Daily Riso — calm editorial ink on warm ivory ──
+        primary: '#2C44A6',        // muted indigo — the single quiet accent
+        'primary-dark': '#20326E',
+        secondary: '#D9614C',      // warm coral — used sparingly
+        tertiary: '#C9A24B',       // muted gold — rare
+        neutral: '#242019',
+        ink: '#242019',            // soft warm near-black (not pure black)
+        canvas: '#F5F2EA',         // clean warm ivory
+        surface: '#FFFFFF',        // clean white card stock
+        alert: '#D9614C',
+        cool: '#2C44A6',
+        highlight: '#DEE3F3',      // soft indigo-tint selection
+        'paper-grey': '#EFEBDF',   // gentle newsprint (sidebar)
+        'paper-accent': '#E7E1D2',
       },
       fontFamily: {
-        display: ['var(--font-space-grotesk)', 'Space Grotesk', 'sans-serif'],
-        serif: ['var(--font-epilogue)', 'Epilogue', 'serif'],
-        sans: ['var(--font-epilogue)', 'Epilogue', 'sans-serif'],
-        mono: ['var(--font-space-mono)', 'Space Mono', 'monospace'],
+        display: ['var(--font-display)', 'Fraunces', 'Georgia', 'serif'],
+        serif: ['var(--font-display)', 'Fraunces', 'serif'],
+        sans: ['var(--font-sans)', 'Epilogue', 'sans-serif'],
+        mono: ['var(--font-mono)', 'Space Mono', 'monospace'],
       },
       boxShadow: {
-        hard: '4px 4px 0px 0px #000000',
-        'hard-hover': '6px 6px 0px 0px #000000',
-        'hard-sm': '2px 2px 0px 0px #000000',
-        'hard-lg': '8px 8px 0px 0px #000000',
+        hard: '3px 3px 0px 0px #242019',
+        'hard-hover': '5px 5px 0px 0px #242019',
+        'hard-sm': '2px 2px 0px 0px #242019',
+        'hard-lg': '7px 7px 0px 0px #242019',
+        'pop': '4px 4px 0px 0px #D9614C',
+        soft: '0 2px 10px 0 rgba(36, 32, 25, 0.06)',
       },
       borderWidth: {
         3: '3px',

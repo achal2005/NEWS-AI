@@ -28,24 +28,20 @@ export default function RegisterPage() {
 
     return (
         <div className="min-h-screen bg-canvas flex flex-col items-center justify-center relative px-4 selection:bg-highlight selection:text-ink">
-            {/* Grid bg */}
-            <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: 'radial-gradient(#121212 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-
-            {/* Floating decorative elements */}
-            <div className="absolute top-16 right-12 w-40 h-20 bg-primary border-3 border-ink shadow-hard rotate-[6deg] opacity-20 hidden md:block" />
-            <div className="absolute bottom-24 left-14 w-28 h-28 border-3 border-ink shadow-hard rotate-[-10deg] opacity-15 hidden md:block" />
+            {/* Newsprint grain */}
+            <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'radial-gradient(#242019 0.5px, transparent 0.6px)', backgroundSize: '4px 4px' }} />
 
             <div className="relative z-10 w-full max-w-md animate-fade-in-up opacity-0" style={{ animationDelay: '100ms', animationFillMode: 'forwards' }}>
-                <div className="absolute inset-0 translate-x-3 translate-y-3 bg-ink border-3 border-ink" />
+                <div className="absolute inset-0 translate-x-2.5 translate-y-2.5 bg-ink border-2 border-ink" />
 
-                <div className="relative bg-white border-3 border-ink overflow-hidden">
+                <div className="relative bg-surface border-2 border-ink overflow-hidden">
                     {/* Header */}
-                    <div className="bg-ink border-b-3 border-ink p-8 text-center">
+                    <div className="bg-primary border-b-2 border-ink p-8 text-center">
                         <Link href="/" className="inline-block">
-                            <h1 className="font-display font-black text-4xl md:text-5xl tracking-tight text-primary">NUTSHELL</h1>
+                            <h1 className="font-display font-black text-5xl md:text-6xl tracking-tight text-canvas">Nutshell</h1>
                         </Link>
-                        <p className="font-mono text-xs mt-2 uppercase tracking-widest text-primary/70">
-                            Join The Intelligence Network
+                        <p className="font-mono text-[11px] mt-2 uppercase tracking-[0.2em] text-canvas/70">
+                            Create your free account
                         </p>
                     </div>
 
@@ -74,7 +70,7 @@ export default function RegisterPage() {
                         </div>
 
                         {/* 3-Step onboarding flow */}
-                        <div className="border-3 border-ink bg-canvas/30 p-4">
+                        <div className="border-2 border-ink bg-canvas/30 p-4">
                             <p className="font-mono text-[10px] text-ink/40 uppercase tracking-widest mb-3">What happens next</p>
                             <div className="flex items-center gap-2">
                                 <div className="flex flex-col items-center flex-1">
@@ -98,7 +94,7 @@ export default function RegisterPage() {
 
                         {/* Auth Error Banner */}
                         {authError && (
-                            <div className="border-3 border-primary bg-primary/5 p-4 flex items-start gap-3">
+                            <div className="border-2 border-primary bg-primary/5 p-4 flex items-start gap-3">
                                 <span className="material-symbols-outlined text-primary text-xl flex-shrink-0 mt-0.5">error</span>
                                 <div className="flex-1">
                                     <p className="font-mono text-sm text-ink/80">{authError}</p>
@@ -116,7 +112,7 @@ export default function RegisterPage() {
                         <button
                             onClick={handleGoogleSignUp}
                             disabled={loading}
-                            className="w-full py-4 bg-primary border-3 border-ink font-bold text-lg uppercase tracking-wide shadow-hard hover:shadow-hard-hover hover:-translate-y-1 transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-wait"
+                            className="w-full py-4 bg-primary border-2 border-ink font-bold text-lg uppercase tracking-wide shadow-hard hover:shadow-hard-hover hover:-translate-y-1 transition-all flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-wait"
                         >
                             {loading ? (
                                 <>

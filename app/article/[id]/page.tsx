@@ -188,8 +188,8 @@ export default function ArticlePage() {
                 <div className="text-center">
                     <span className="material-symbols-outlined text-6xl text-ink/20">error</span>
                     <p className="font-mono text-sm text-ink/60 mt-4">Article not found</p>
-                    <Link href="/dashboard" className="mt-4 inline-block px-4 py-2 bg-primary border-3 border-ink shadow-hard font-bold">
-                        BACK TO DROP
+                    <Link href="/dashboard" className="mt-4 inline-block px-4 py-2 bg-primary text-canvas border-2 border-ink shadow-hard font-bold">
+                        BACK TO FEED
                     </Link>
                 </div>
             </div>
@@ -199,25 +199,25 @@ export default function ArticlePage() {
     return (
         <div className="flex flex-col min-h-screen">
             {/* Sticky Header with Progress */}
-            <header className="sticky top-0 z-30 w-full bg-canvas border-b-3 border-ink">
+            <header className="sticky top-0 z-30 w-full bg-canvas border-b-2 border-ink">
                 <div className="flex items-center justify-between px-4 py-3 md:px-8 max-w-5xl mx-auto">
-                    <Link href="/dashboard" className="flex items-center gap-2 font-mono font-bold text-sm hover:text-alert transition-colors group">
+                    <Link href="/dashboard" className="flex items-center gap-2 font-mono font-bold text-xs sm:text-sm hover:text-primary transition-colors group">
                         <span className="material-symbols-outlined text-lg transition-transform group-hover:-translate-x-1">arrow_back</span>
-                        BACK TO DROP
+                        BACK TO FEED
                     </Link>
                     <div className="hidden md:block font-mono text-xs tracking-widest uppercase opacity-50">
                         Reading Mode: {summaryMode === 'pro' ? 'Deep Dive' : 'Skim'}
                     </div>
                     <div className="flex items-center gap-4">
                         <a href={article.source_url} target="_blank" rel="noopener noreferrer"
-                            className="size-10 flex items-center justify-center border-3 border-ink bg-white shadow-hard-sm hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"
+                            className="size-10 flex items-center justify-center border-2 border-ink bg-white shadow-hard-sm hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all"
                             title="View Source">
                             <span className="material-symbols-outlined">open_in_new</span>
                         </a>
                     </div>
                 </div>
                 {/* Reading Progress Bar */}
-                <div className="relative w-full h-3 border-t-3 border-ink bg-canvas">
+                <div className="relative w-full h-3 border-t-2 border-ink bg-canvas">
                     <div
                         className="absolute top-0 left-0 h-full bg-primary transition-all duration-150"
                         style={{ width: `${readingProgress}%` }}
@@ -234,17 +234,17 @@ export default function ArticlePage() {
                     </h1>
 
                     {/* Metadata Box */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-primary border-3 border-ink shadow-hard font-mono text-sm font-bold">
-                        <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-lg">newspaper</span>
-                            <span>SOURCE: {article.source_name?.toUpperCase() || 'NEWS'}</span>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 p-4 bg-primary text-canvas border-2 border-ink shadow-hard font-mono text-xs sm:text-sm font-bold">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <span className="material-symbols-outlined text-lg shrink-0">newspaper</span>
+                            <span className="truncate">SOURCE: {article.source_name?.toUpperCase() || 'NEWS'}</span>
                         </div>
-                        <div className="hidden md:block w-px h-4 bg-ink" />
+                        <div className="hidden md:block w-px h-4 bg-canvas/40 shrink-0" />
                         <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-lg">label</span>
+                            <span className="material-symbols-outlined text-lg shrink-0">label</span>
                             <span>{article.category?.toUpperCase() || 'GENERAL'}</span>
                         </div>
-                        <div className="hidden md:block w-px h-4 bg-ink" />
+                        <div className="hidden md:block w-px h-4 bg-canvas/40 shrink-0" />
                         <div className="flex items-center gap-2">
                             <span className="material-symbols-outlined text-lg">calendar_today</span>
                             <span>{article.published_at ? new Date(article.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase() : 'RECENT'}</span>
@@ -253,7 +253,7 @@ export default function ArticlePage() {
                 </header>
 
                 {/* AI Summary Section */}
-                <div className="mb-10 border-3 border-ink bg-white shadow-hard p-6">
+                <div className="mb-10 border-2 border-ink bg-white shadow-hard p-6">
                     <div className="flex flex-wrap items-center gap-2 mb-4">
                         <div className="flex items-center gap-2">
                             <span className="bg-ink text-primary px-2 py-1 text-xs font-mono font-bold">AI BRIEF</span>
@@ -266,7 +266,7 @@ export default function ArticlePage() {
                             <button
                                 onClick={regenerateSummary}
                                 disabled={regenerating || loadingSummary}
-                                className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-primary border-2 border-ink shadow-hard-sm font-bold text-xs uppercase hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-primary text-canvas border-2 border-ink shadow-hard-sm font-bold text-xs uppercase hover:shadow-none hover:translate-x-[1px] hover:translate-y-[1px] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="Regenerate summary with current depth settings"
                             >
                                 <span className={`material-symbols-outlined text-sm ${regenerating ? 'animate-spin' : ''}`}>refresh</span>
@@ -289,7 +289,7 @@ export default function ArticlePage() {
                             <p className="font-mono text-sm text-ink/60 text-center">{summaryError}</p>
                             <button
                                 onClick={() => { lastFetchedModeRef.current = null; if (isAuthenticated) fetchSummary(summaryMode) }}
-                                className="px-4 py-2 bg-primary border-3 border-ink shadow-hard font-bold text-sm hover:shadow-hard-hover hover:-translate-y-1 transition-all"
+                                className="px-4 py-2 bg-primary border-2 border-ink shadow-hard font-bold text-sm hover:shadow-hard-hover hover:-translate-y-1 transition-all"
                             >
                                 RETRY
                             </button>
@@ -310,7 +310,7 @@ export default function ArticlePage() {
                     <div className="mb-10">
                         <button
                             onClick={() => setShowJargon(!showJargon)}
-                            className="flex items-center gap-2 px-4 py-2 border-3 border-ink bg-highlight/20 shadow-hard-sm hover:bg-highlight/40 transition-colors font-bold text-sm"
+                            className="flex items-center gap-2 px-4 py-2 border-2 border-ink bg-highlight/20 shadow-hard-sm hover:bg-highlight/40 transition-colors font-bold text-sm"
                         >
                             <span className="material-symbols-outlined text-lg">dictionary</span>
                             JARGON DECODER ({jargon.length})
@@ -318,7 +318,7 @@ export default function ArticlePage() {
                         </button>
 
                         {showJargon && (
-                            <div className="mt-4 border-3 border-ink bg-white shadow-hard divide-y-2 divide-ink/10">
+                            <div className="mt-4 border-2 border-ink bg-white shadow-hard divide-y-2 divide-ink/10">
                                 {jargon.map((term, i) => (
                                     <div key={i} className="p-4 hover:bg-primary/10 transition-colors">
                                         <div className="flex items-center gap-2 mb-1">
@@ -335,8 +335,8 @@ export default function ArticlePage() {
 
                 {/* Featured Image */}
                 {article.image_url && (
-                    <figure className="relative w-[110%] -ml-[5%] mb-12 group">
-                        <div className="relative border-3 border-ink bg-alert shadow-hard overflow-hidden">
+                    <figure className="relative w-full ml-0 md:w-[110%] md:-ml-[5%] mb-12 group">
+                        <div className="relative border-2 border-ink bg-alert shadow-hard overflow-hidden">
                             <img
                                 src={article.image_url}
                                 alt={article.title}
@@ -382,8 +382,8 @@ export default function ArticlePage() {
                 </div>
 
                 {/* Footer */}
-                <div className="mt-20 pt-10 border-t-3 border-dashed border-gray-300">
-                    <Link href="/dashboard" className="group cursor-pointer border-3 border-ink bg-white p-6 shadow-hard hover:shadow-hard-hover hover:-translate-y-1 transition-all flex items-center justify-between">
+                <div className="mt-20 pt-10 border-t-2 border-dashed border-gray-300">
+                    <Link href="/dashboard" className="group cursor-pointer border-2 border-ink bg-white p-6 shadow-hard hover:shadow-hard-hover hover:-translate-y-1 transition-all flex items-center justify-between">
                         <div>
                             <p className="font-mono text-sm uppercase text-gray-500 mb-2">Continue Reading</p>
                             <h3 className="font-display font-bold text-2xl group-hover:text-alert transition-colors">

@@ -16,7 +16,8 @@ export function LayoutShell({ children }: { children: React.ReactNode }) {
     return (
         <div className="relative min-h-screen flex bg-canvas text-ink">
             <Sidebar />
-            <main className="flex-1 ml-0 md:ml-[280px] flex flex-col min-h-screen relative min-w-0 overflow-x-hidden">
+            {/* pb-24 on mobile clears the fixed bottom nav; removed at md+ where the sidebar takes over */}
+            <main className="flex-1 ml-0 md:ml-[280px] flex flex-col min-h-screen relative min-w-0 overflow-x-hidden pb-24 md:pb-0">
                 {children}
             </main>
         </div>
